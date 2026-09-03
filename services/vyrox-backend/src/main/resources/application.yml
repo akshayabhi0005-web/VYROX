@@ -23,7 +23,7 @@ spring:
             non_contextual_creation: true
   h2:
     console:
-      enabled: true
+      enabled: ${H2_CONSOLE_ENABLED:false}
       path: /h2-console
 
 app:

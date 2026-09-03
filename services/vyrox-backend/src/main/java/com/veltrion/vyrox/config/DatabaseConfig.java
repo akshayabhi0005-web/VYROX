@@ -50,14 +50,19 @@ public class DatabaseConfig {
             envPassword = rawPassword;
         }
 
-        String jdbcUrl = envDbUrl.trim();
+        String inputUrl = envDbUrl != null ? envDbUrl.trim() : "";
         String finalUsername = envUsername != null ? envUsername.trim() : "";
         String finalPassword = envPassword != null ? envPassword.trim() : "";
 
-        // Normalize postgres:// or postgresql:// URIs into standard JDBC format
-        if (jdbcUrl.startsWith("postgres://") || jdbcUrl.startsWith("postgresql://")) {
+        String targetJdbcUrl = inputUrl;
+        String host = "localhost";
+        int port = 5432;
+        String dbName = "postgres";
+
+        // Check if URI-style connection string (postgres:// or postgresql://)
+        if (inputUrl.startsWith("postgres://") || inputUrl.startsWith("postgresql://")) {
             try {
-                URI uri = new URI(jdbcUrl);
+                URI uri = new URI(inputUrl);
                 String userInfo = uri.getUserInfo();
                 if (userInfo != null && userInfo.contains(":")) {
                     String[] userParts = userInfo.split(":", 2);
@@ -68,39 +73,70 @@ public class DatabaseConfig {
                         finalPassword = userParts[1];
                     }
                 }
-                String host = uri.getHost();
-                int port = uri.getPort() > 0 ? uri.getPort() : 5432;
-                String path = uri.getPath() != null && !uri.getPath().isEmpty() ? uri.getPath() : "/postgres";
-                String query = uri.getQuery() != null ? "?" + uri.getQuery() : "?sslmode=require";
-                if (!query.contains("sslmode")) {
-                    query += (query.startsWith("?") ? "&" : "?") + "sslmode=require";
+
+                host = uri.getHost() != null ? uri.getHost() : "aws-0-ap-northeast-1.pooler.supabase.com";
+                port = uri.getPort() > 0 ? uri.getPort() : 5432;
+                dbName = uri.getPath() != null && !uri.getPath().isEmpty() ? uri.getPath().replaceAll("^/", "") : "postgres";
+
+                // Automatically redirect any direct Supabase host (db.*.supabase.co) to Session Pooler to avoid IPv6 issues
+                if (host.startsWith("db.") && host.endsWith(".supabase.co")) {
+                    logger.info("Direct Supabase hostname detected ({}). Redirecting to Supabase Session Pooler.", host);
+                    host = "aws-0-ap-northeast-1.pooler.supabase.com";
+                    port = 5432;
                 }
-                jdbcUrl = "jdbc:postgresql://" + host + ":" + port + path + query;
+
+                String query = uri.getQuery() != null ? uri.getQuery() : "sslmode=require";
+                if (!query.contains("sslmode")) {
+                    query += (query.isEmpty() ? "" : "&") + "sslmode=require";
+                }
+
+                targetJdbcUrl = "jdbc:postgresql://" + host + ":" + port + "/" + dbName + "?" + query;
             } catch (Exception e) {
-                logger.warn("Could not parse URI format for DATABASE_URL, attempting prefix prepend", e);
-                jdbcUrl = "jdbc:" + jdbcUrl;
+                logger.warn("Could not parse URI format for DATABASE_URL; falling back to direct JDBC string", e);
+                targetJdbcUrl = "jdbc:" + inputUrl;
+            }
+        } else if (inputUrl.startsWith("jdbc:postgresql://")) {
+            // Already standard JDBC format: parse host/port for logging and direct-host auto-fix
+            try {
+                String uriPart = inputUrl.substring("jdbc:".length());
+                URI uri = new URI(uriPart);
+                host = uri.getHost() != null ? uri.getHost() : "aws-0-ap-northeast-1.pooler.supabase.com";
+                port = uri.getPort() > 0 ? uri.getPort() : 5432;
+                dbName = uri.getPath() != null && !uri.getPath().isEmpty() ? uri.getPath().replaceAll("^/", "") : "postgres";
+
+                if (host.startsWith("db.") && host.endsWith(".supabase.co")) {
+                    logger.info("Direct Supabase hostname detected ({}). Redirecting to Supabase Session Pooler.", host);
+                    host = "aws-0-ap-northeast-1.pooler.supabase.com";
+                    port = 5432;
+                    String query = uri.getQuery() != null ? uri.getQuery() : "sslmode=require";
+                    if (!query.contains("sslmode")) {
+                        query += (query.isEmpty() ? "" : "&") + "sslmode=require";
+                    }
+                    targetJdbcUrl = "jdbc:postgresql://" + host + ":" + port + "/" + dbName + "?" + query;
+                }
+            } catch (Exception e) {
+                // Ignore parse errors on raw JDBC string
             }
         }
 
         // Determine driver class
         String driverClass = rawDriver != null ? rawDriver.trim() : "";
         if (driverClass.isEmpty()) {
-            if (jdbcUrl.startsWith("jdbc:postgresql:")) {
+            if (targetJdbcUrl.startsWith("jdbc:postgresql:")) {
                 driverClass = "org.postgresql.Driver";
-            } else if (jdbcUrl.startsWith("jdbc:h2:")) {
+            } else if (targetJdbcUrl.startsWith("jdbc:h2:")) {
                 driverClass = "org.h2.Driver";
             } else {
                 driverClass = "org.postgresql.Driver";
             }
         }
 
-        // Safe URL logging (mask credentials)
-        String maskedUrl = jdbcUrl.replaceAll(":[^/@]+@", ":****@");
-        logger.info("Initializing VYROX DataSource. Target URL: {}, Driver: {}, User: {}", 
-                maskedUrl, driverClass, finalUsername);
+        // Secure logging (NO credentials logged)
+        logger.info("Initializing VYROX DataSource. Target Host: {}, Port: {}, Database: {}, Driver: {}, User: {}", 
+                host, port, dbName, driverClass, finalUsername);
 
         HikariConfig config = new HikariConfig();
-        config.setJdbcUrl(jdbcUrl);
+        config.setJdbcUrl(targetJdbcUrl);
         config.setDriverClassName(driverClass);
         if (!finalUsername.isEmpty()) {
             config.setUsername(finalUsername);
@@ -109,7 +145,7 @@ public class DatabaseConfig {
             config.setPassword(finalPassword);
         }
 
-        // Production-ready connection pool tuning for Supabase Session Pooler
+        // Production connection pool tuning for Supabase Session Pooler
         config.setMaximumPoolSize(10);
         config.setMinimumIdle(2);
         config.setConnectionTimeout(30000); // 30s timeout
@@ -118,10 +154,11 @@ public class DatabaseConfig {
         config.setValidationTimeout(5000);  // 5s
         config.setPoolName("VyroxHikariPool");
 
-        if (jdbcUrl.startsWith("jdbc:postgresql:")) {
+        if (targetJdbcUrl.startsWith("jdbc:postgresql:")) {
             config.addDataSourceProperty("tcpKeepAlive", "true");
             config.addDataSourceProperty("connectTimeout", "30");
             config.addDataSourceProperty("socketTimeout", "60");
+            config.addDataSourceProperty("sslmode", "require");
         }
 
         return new HikariDataSource(config);
