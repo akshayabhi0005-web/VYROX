@@ -64,7 +64,8 @@ fun MainContainerScreen(
                     CartScreen(
                         onNavigateToLogin = onNavigateToLogin,
                         onNavigateToCheckout = onNavigateToCheckout,
-                        onNavigateToLocation = onNavigateToLocation
+                        onNavigateToLocation = onNavigateToLocation,
+                        onProductClick = { productId -> onNavigateToProductDetail(productId) }
                     )
                 }
             }

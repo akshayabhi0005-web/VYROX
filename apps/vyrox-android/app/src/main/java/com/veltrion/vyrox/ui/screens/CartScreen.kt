@@ -22,9 +22,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.veltrion.vyrox.data.model.CartResponse
-import com.veltrion.vyrox.data.repository.AuthRepository
+import com.veltrion.vyrox.data.model.CartItemDto
 import com.veltrion.vyrox.data.repository.CommerceRepository
+import com.veltrion.vyrox.ui.components.ProductImage
 import com.veltrion.vyrox.ui.theme.VyroxNavy
 import com.veltrion.vyrox.ui.theme.VyroxOrange
 import kotlinx.coroutines.launch
@@ -33,16 +33,18 @@ import kotlinx.coroutines.launch
 fun CartScreen(
     onNavigateToLogin: () -> Unit,
     onNavigateToCheckout: () -> Unit,
-    onNavigateToLocation: () -> Unit = {}
+    onNavigateToLocation: () -> Unit = {},
+    onProductClick: (Long) -> Unit = {}
 ) {
-    val currentUser by AuthRepository.currentUser.collectAsState()
-    var cart by remember { mutableStateOf<CartResponse?>(null) }
+    val cart by CommerceRepository.cartFlow.collectAsState()
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(currentUser) {
-        cart = CommerceRepository.getCart()
+    LaunchedEffect(Unit) {
+        CommerceRepository.getCart()
     }
+
+    val savedItems = cart.savedForLaterItems ?: emptyList()
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) }
@@ -61,7 +63,7 @@ fun CartScreen(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "My Cart (${cart?.totalItems ?: 0} Items)",
+                        text = "My Cart (${cart.totalItems} Items)",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Black,
                         color = VyroxNavy
@@ -101,7 +103,7 @@ fun CartScreen(
             }
 
             // Cart items or Empty state
-            if (cart == null || cart!!.items.isEmpty()) {
+            if (cart.items.isEmpty() && savedItems.isEmpty()) {
                 Box(
                     modifier = Modifier.fillMaxSize().weight(1f),
                     contentAlignment = Alignment.Center
@@ -110,10 +112,16 @@ fun CartScreen(
                         Icon(Icons.Default.ShoppingCart, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(56.dp))
                         Spacer(modifier = Modifier.height(10.dp))
                         Text(
-                            text = "Your cart is waiting for something great.",
+                            text = "Your cart is empty.",
                             color = Color.Gray,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Medium
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "Add items from Top Deals or Quick Commerce to start!",
+                            color = Color.DarkGray,
+                            fontSize = 12.sp
                         )
                     }
                 }
@@ -122,128 +130,110 @@ fun CartScreen(
                     modifier = Modifier.weight(1f).padding(12.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    items(cart!!.items) { item ->
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = Color.White),
-                            shape = RoundedCornerShape(16.dp),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-                        ) {
-                            Column(modifier = Modifier.padding(12.dp)) {
-                                Row(modifier = Modifier.fillMaxWidth()) {
-                                    com.veltrion.vyrox.ui.components.ProductImage(
-                                        imageUrl = item.mainImageUrl,
-                                        category = null,
-                                        title = item.productTitle,
-                                        modifier = Modifier
-                                            .size(80.dp)
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .background(Color(0xFFF8F9FD))
-                                            .padding(6.dp),
-                                        contentScale = ContentScale.Fit
-                                    )
-
-                                    Spacer(modifier = Modifier.width(12.dp))
-
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = item.productTitle,
-                                            fontSize = 13.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            maxLines = 2
-                                        )
-
-                                        Spacer(modifier = Modifier.height(4.dp))
-
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Text(
-                                                text = "₹${item.sellingPrice.toInt()}",
-                                                fontSize = 15.sp,
-                                                fontWeight = FontWeight.Black,
-                                                color = VyroxNavy
-                                            )
-                                            Spacer(modifier = Modifier.width(6.dp))
-                                            Text(
-                                                text = "₹${item.mrp.toInt()}",
-                                                fontSize = 11.sp,
-                                                color = Color.Gray,
-                                                textDecoration = TextDecoration.LineThrough
-                                            )
-                                        }
-
-                                        Text(
-                                            text = item.estimatedDelivery ?: "Delivery Tomorrow",
-                                            fontSize = 10.sp,
-                                            color = Color.Gray
-                                        )
-                                    }
+                    // Active Cart Items
+                    items(cart.items) { item ->
+                        CartItemCard(
+                            item = item,
+                            onIncrease = {
+                                scope.launch {
+                                    CommerceRepository.addToCart(item.productId, 1)
                                 }
+                            },
+                            onDecrease = {
+                                scope.launch {
+                                    CommerceRepository.addToCart(item.productId, -1)
+                                }
+                            },
+                            onRemove = {
+                                scope.launch {
+                                    CommerceRepository.addToCart(item.productId, -item.quantity)
+                                    snackbarHostState.showSnackbar("Item removed from cart")
+                                }
+                            },
+                            onSaveForLater = {
+                                scope.launch {
+                                    CommerceRepository.saveForLater(item.productId)
+                                    snackbarHostState.showSnackbar("Item moved to Save for Later")
+                                }
+                            },
+                            onItemClick = { onProductClick(item.productId) }
+                        )
+                    }
 
-                                Spacer(modifier = Modifier.height(10.dp))
+                    // Saved for Later Section
+                    if (savedItems.isNotEmpty()) {
+                        item {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                text = "Saved For Later (${savedItems.size})",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp,
+                                color = VyroxNavy,
+                                modifier = Modifier.padding(vertical = 4.dp)
+                            )
+                        }
 
+                        items(savedItems) { savedItem ->
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFC)),
+                                shape = RoundedCornerShape(14.dp)
+                            ) {
                                 Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    modifier = Modifier.padding(12.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    // Quantity Selector
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .background(Color(0xFFF1F5F9))
-                                            .padding(horizontal = 4.dp, vertical = 2.dp)
-                                    ) {
-                                        IconButton(
-                                            onClick = {
-                                                scope.launch {
-                                                    cart = CommerceRepository.addToCart(item.productId, -1)
-                                                    snackbarHostState.showSnackbar("Cart updated")
-                                                }
-                                            },
-                                            modifier = Modifier.size(28.dp)
-                                        ) {
-                                            Icon(Icons.Default.Remove, contentDescription = "Decrease", modifier = Modifier.size(16.dp))
-                                        }
-                                        Text(
-                                            text = "${item.quantity}",
-                                            fontSize = 13.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            modifier = Modifier.padding(horizontal = 8.dp)
-                                        )
-                                        IconButton(
-                                            onClick = {
-                                                scope.launch {
-                                                    cart = CommerceRepository.addToCart(item.productId, 1)
-                                                    snackbarHostState.showSnackbar("Cart updated")
-                                                }
-                                            },
-                                            modifier = Modifier.size(28.dp)
-                                        ) {
-                                            Icon(Icons.Default.Add, contentDescription = "Increase", modifier = Modifier.size(16.dp))
-                                        }
+                                    ProductImage(
+                                        imageUrl = savedItem.mainImageUrl,
+                                        title = savedItem.productTitle,
+                                        modifier = Modifier.size(60.dp).clip(RoundedCornerShape(8.dp)),
+                                        contentScale = ContentScale.Fit
+                                    )
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(savedItem.productTitle, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+                                        Text("₹${savedItem.sellingPrice.toInt()}", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = VyroxNavy)
                                     }
+                                    Button(
+                                        onClick = {
+                                            scope.launch {
+                                                CommerceRepository.moveToCart(savedItem.productId)
+                                                snackbarHostState.showSnackbar("Moved back to Cart")
+                                            }
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = VyroxNavy),
+                                        shape = RoundedCornerShape(8.dp),
+                                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                                    ) {
+                                        Text("Move to Cart", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                            }
+                        }
+                    }
 
-                                    Row {
-                                        TextButton(
-                                            onClick = {
-                                                scope.launch {
-                                                    snackbarHostState.showSnackbar("Item moved to Save for Later")
-                                                }
-                                            }
-                                        ) {
-                                            Text("Save for later", fontSize = 11.sp, color = Color.Gray)
-                                        }
-                                        TextButton(
-                                            onClick = {
-                                                scope.launch {
-                                                    cart = CommerceRepository.addToCart(item.productId, -item.quantity)
-                                                    snackbarHostState.showSnackbar("Item removed from cart")
-                                                }
-                                            }
-                                        ) {
-                                            Text("Remove", fontSize = 11.sp, color = Color.Red)
-                                        }
+                    // Price Breakdown in Cart
+                    if (cart.items.isNotEmpty()) {
+                        item {
+                            Card(
+                                modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                shape = RoundedCornerShape(14.dp)
+                            ) {
+                                Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    Text("Price Details (${cart.totalItems} Items)", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = VyroxNavy)
+                                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                        Text("Total MRP", fontSize = 12.sp, color = Color.Gray)
+                                        Text("₹${cart.subtotal.toInt()}", fontSize = 12.sp)
+                                    }
+                                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                        Text("Discount on MRP", fontSize = 12.sp, color = Color.Gray)
+                                        Text("-₹${cart.totalSavings.toInt()}", fontSize = 12.sp, color = Color(0xFF047857), fontWeight = FontWeight.Bold)
+                                    }
+                                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                        Text("Delivery Fee", fontSize = 12.sp, color = Color.Gray)
+                                        Text(if (cart.deliveryFee == 0.0) "FREE" else "₹${cart.deliveryFee.toInt()}", fontSize = 12.sp, color = if (cart.deliveryFee == 0.0) Color(0xFF047857) else Color.Black, fontWeight = FontWeight.Bold)
                                     }
                                 }
                             }
@@ -252,38 +242,154 @@ fun CartScreen(
                 }
 
                 // Bottom Checkout Bar
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = Color.White,
-                    shadowElevation = 8.dp
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                if (cart.items.isNotEmpty()) {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = Color.White,
+                        shadowElevation = 8.dp
                     ) {
-                        Column {
-                            Text(
-                                text = "Total Amount",
-                                fontSize = 11.sp,
-                                color = Color.Gray
-                            )
-                            Text(
-                                text = "₹${cart?.grandTotal?.toInt() ?: 0}",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Black,
-                                color = VyroxNavy
-                            )
-                        }
-
-                        Button(
-                            onClick = onNavigateToCheckout,
-                            modifier = Modifier.height(48.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = VyroxOrange)
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("Proceed to Checkout", fontWeight = FontWeight.Black, fontSize = 13.sp)
+                            Column {
+                                Text(
+                                    text = "Total Amount",
+                                    fontSize = 11.sp,
+                                    color = Color.Gray
+                                )
+                                Text(
+                                    text = "₹${cart.grandTotal.toInt()}",
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = VyroxNavy
+                                )
+                            }
+
+                            Button(
+                                onClick = onNavigateToCheckout,
+                                modifier = Modifier.height(48.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = VyroxOrange)
+                            ) {
+                                Text("Proceed to Checkout →", fontWeight = FontWeight.Black, fontSize = 13.sp)
+                            }
                         }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun CartItemCard(
+    item: CartItemDto,
+    onIncrease: () -> Unit,
+    onDecrease: () -> Unit,
+    onRemove: () -> Unit,
+    onSaveForLater: () -> Unit,
+    onItemClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth().clickable { onItemClick() }
+            ) {
+                ProductImage(
+                    imageUrl = item.mainImageUrl,
+                    title = item.productTitle,
+                    modifier = Modifier
+                        .size(80.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color(0xFFF8F9FD))
+                        .padding(6.dp),
+                    contentScale = ContentScale.Fit
+                )
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = item.productTitle,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 2
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "₹${item.sellingPrice.toInt()}",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Black,
+                            color = VyroxNavy
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "₹${item.mrp.toInt()}",
+                            fontSize = 11.sp,
+                            color = Color.Gray,
+                            textDecoration = TextDecoration.LineThrough
+                        )
+                    }
+
+                    Text(
+                        text = item.estimatedDelivery ?: "Delivery Tomorrow",
+                        fontSize = 10.sp,
+                        color = Color.Gray
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Quantity Selector
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color(0xFFF1F5F9))
+                        .padding(horizontal = 4.dp, vertical = 2.dp)
+                ) {
+                    IconButton(
+                        onClick = onDecrease,
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(Icons.Default.Remove, contentDescription = "Decrease", modifier = Modifier.size(16.dp))
+                    }
+                    Text(
+                        text = "${item.quantity}",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 8.dp)
+                    )
+                    IconButton(
+                        onClick = onIncrease,
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = "Increase", modifier = Modifier.size(16.dp))
+                    }
+                }
+
+                Row {
+                    TextButton(onClick = onSaveForLater) {
+                        Text("Save for later", fontSize = 11.sp, color = Color.Gray)
+                    }
+                    TextButton(onClick = onRemove) {
+                        Text("Remove", fontSize = 11.sp, color = Color.Red)
                     }
                 }
             }

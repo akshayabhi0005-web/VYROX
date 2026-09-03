@@ -2,6 +2,10 @@ package com.veltrion.vyrox.data.repository
 
 import com.veltrion.vyrox.data.api.ApiClient
 import com.veltrion.vyrox.data.model.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlin.random.Random
 
 object CommerceRepository {
 
@@ -197,7 +201,7 @@ object CommerceRepository {
         )
     )
 
-    private var localCartItems = mutableListOf(
+    private val localCartItems = mutableListOf<CartItemDto>(
         CartItemDto(
             itemId = 1L,
             productId = 1L,
@@ -213,6 +217,44 @@ object CommerceRepository {
             estimatedDelivery = "Tomorrow by 11 AM"
         )
     )
+
+    private val localSavedForLaterItems = mutableListOf<CartItemDto>()
+
+    private val _cartFlow = MutableStateFlow<CartResponse>(buildLocalCart())
+    val cartFlow: StateFlow<CartResponse> = _cartFlow.asStateFlow()
+
+    private val _wishlistFlow = MutableStateFlow<Set<Long>>(setOf(1L, 3L))
+    val wishlistFlow: StateFlow<Set<Long>> = _wishlistFlow.asStateFlow()
+
+    private val localOrders = mutableListOf<OrderDto>(
+        OrderDto(
+            id = 1L,
+            orderNumber = "VYR-2026-90412",
+            status = "OUT_FOR_DELIVERY",
+            subtotal = 219900.0,
+            grandTotal = 219900.0,
+            doorstepOtp = "4829",
+            quickCommerce = false,
+            estimatedDeliveryTime = "Arriving in 3 Mins",
+            items = listOf(
+                OrderItemDto(
+                    id = 1L,
+                    productId = 1L,
+                    productTitle = "Apple MacBook Pro 16\" (M3 Pro Chip, 18GB RAM, 512GB SSD, Space Black)",
+                    mainImageUrl = "https://images.unsplash.com/photo-1517336714731-489689fd1ca8",
+                    unitPrice = 219900.0,
+                    quantity = 1,
+                    totalPrice = 219900.0
+                )
+            )
+        )
+    )
+
+    private val _ordersFlow = MutableStateFlow<List<OrderDto>>(localOrders.toList())
+    val ordersFlow: StateFlow<List<OrderDto>> = _ordersFlow.asStateFlow()
+
+    private val _coinBalanceFlow = MutableStateFlow(250)
+    val coinBalanceFlow: StateFlow<Int> = _coinBalanceFlow.asStateFlow()
 
     suspend fun getTopDeals(): List<ProductSummary> {
         return try {
@@ -259,7 +301,7 @@ object CommerceRepository {
         }
     }
 
-    private fun getDemoProductDetail(id: Long): ProductDetail {
+    fun getDemoProductDetail(id: Long): ProductDetail {
         val item = demoProducts.find { it.id == id } ?: demoProducts[0]
         return ProductDetail(
             id = item.id,
@@ -304,7 +346,12 @@ object CommerceRepository {
     suspend fun getCart(): CartResponse {
         return try {
             val res = ApiClient.apiService.getCart()
-            if (res.isSuccessful && res.body() != null) res.body()!! else buildLocalCart()
+            if (res.isSuccessful && res.body() != null) {
+                _cartFlow.value = res.body()!!
+                res.body()!!
+            } else {
+                buildLocalCart()
+            }
         } catch (e: Exception) {
             buildLocalCart()
         }
@@ -315,26 +362,33 @@ object CommerceRepository {
         val subtotal = localCartItems.sumOf { it.mrp * it.quantity }
         val grandTotal = localCartItems.sumOf { it.sellingPrice * it.quantity }
         val savings = subtotal - grandTotal
-        return CartResponse(
+        val cartResponse = CartResponse(
             cartId = 1L,
             items = localCartItems.toList(),
-            savedForLaterItems = emptyList(),
+            savedForLaterItems = localSavedForLaterItems.toList(),
             totalItems = totalItems,
             subtotal = subtotal,
             totalSavings = savings,
-            deliveryFee = if (grandTotal > 500.0) 0.0 else 40.0,
+            deliveryFee = if (grandTotal > 500.0 || localCartItems.isEmpty()) 0.0 else 40.0,
             grandTotal = grandTotal,
             potentialCoinsEarned = (grandTotal * 0.05).toInt()
         )
+        _cartFlow.value = cartResponse
+        return cartResponse
     }
 
-    suspend fun addToCart(productId: Long, quantity: Int = 1): CartResponse {
+    suspend fun addToCart(productId: Long, deltaQuantity: Int = 1): CartResponse {
         val product = demoProducts.find { it.id == productId } ?: demoProducts[0]
         val existingIndex = localCartItems.indexOfFirst { it.productId == productId }
         if (existingIndex >= 0) {
             val existing = localCartItems[existingIndex]
-            localCartItems[existingIndex] = existing.copy(quantity = existing.quantity + quantity)
-        } else {
+            val newQty = existing.quantity + deltaQuantity
+            if (newQty > 0) {
+                localCartItems[existingIndex] = existing.copy(quantity = newQty)
+            } else {
+                localCartItems.removeAt(existingIndex)
+            }
+        } else if (deltaQuantity > 0) {
             localCartItems.add(
                 CartItemDto(
                     itemId = (localCartItems.size + 1).toLong(),
@@ -346,7 +400,7 @@ object CommerceRepository {
                     mrp = product.mrp,
                     sellingPrice = product.sellingPrice,
                     discountPercentage = product.discountPercentage,
-                    quantity = quantity,
+                    quantity = deltaQuantity,
                     savedForLater = false,
                     estimatedDelivery = product.estimatedDeliveryDays
                 )
@@ -354,45 +408,100 @@ object CommerceRepository {
         }
 
         try {
-            ApiClient.apiService.addToCart(AddToCartRequest(productId, quantity))
+            ApiClient.apiService.addToCart(AddToCartRequest(productId, deltaQuantity))
         } catch (_: Exception) {}
 
         return buildLocalCart()
     }
 
+    fun saveForLater(productId: Long): CartResponse {
+        val itemIndex = localCartItems.indexOfFirst { it.productId == productId }
+        if (itemIndex >= 0) {
+            val item = localCartItems.removeAt(itemIndex)
+            localSavedForLaterItems.add(item.copy(savedForLater = true))
+        }
+        return buildLocalCart()
+    }
+
+    fun moveToCart(productId: Long): CartResponse {
+        val itemIndex = localSavedForLaterItems.indexOfFirst { it.productId == productId }
+        if (itemIndex >= 0) {
+            val item = localSavedForLaterItems.removeAt(itemIndex)
+            localCartItems.add(item.copy(savedForLater = false))
+        }
+        return buildLocalCart()
+    }
+
+    fun clearCart(): CartResponse {
+        localCartItems.clear()
+        return buildLocalCart()
+    }
+
+    fun toggleWishlist(productId: Long): Boolean {
+        val current = _wishlistFlow.value.toMutableSet()
+        val newState = if (current.contains(productId)) {
+            current.remove(productId)
+            false
+        } else {
+            current.add(productId)
+            true
+        }
+        _wishlistFlow.value = current
+        return newState
+    }
+
+    fun isWishlisted(productId: Long): Boolean {
+        return _wishlistFlow.value.contains(productId)
+    }
+
     suspend fun getOrders(): List<OrderDto> {
         return try {
             val res = ApiClient.apiService.getOrders()
-            if (res.isSuccessful && !res.body().isNullOrEmpty()) res.body()!! else getDemoOrders()
+            if (res.isSuccessful && !res.body().isNullOrEmpty()) {
+                _ordersFlow.value = res.body()!!
+                res.body()!!
+            } else {
+                localOrders.toList()
+            }
         } catch (e: Exception) {
-            getDemoOrders()
+            localOrders.toList()
         }
     }
 
-    private fun getDemoOrders(): List<OrderDto> {
-        return listOf(
-            OrderDto(
-                id = 1L,
-                orderNumber = "VYR-2026-90412",
-                status = "OUT_FOR_DELIVERY",
-                subtotal = 219900.0,
-                grandTotal = 219900.0,
-                doorstepOtp = "4829",
-                quickCommerce = false,
-                estimatedDeliveryTime = "Arriving in 3 Mins",
-                items = listOf(
-                    OrderItemDto(
-                        id = 1L,
-                        productId = 1L,
-                        productTitle = "Apple MacBook Pro 16\" (M3 Pro Chip, 18GB RAM, 512GB SSD, Space Black)",
-                        mainImageUrl = "https://images.unsplash.com/photo-1517336714731-489689fd1ca8",
-                        unitPrice = 219900.0,
-                        quantity = 1,
-                        totalPrice = 219900.0
-                    )
-                )
-            )
+    fun createOrder(
+        items: List<OrderItemDto>,
+        subtotal: Double,
+        grandTotal: Double,
+        paymentMethod: String,
+        coinsUsed: Int = 0
+    ): OrderDto {
+        val randomNum = Random.nextInt(10000, 99999)
+        val orderNumber = "VYR-2026-$randomNum"
+        val otp = Random.nextInt(1000, 9999).toString()
+
+        val newOrder = OrderDto(
+            id = (localOrders.size + 1).toLong(),
+            orderNumber = orderNumber,
+            status = "CONFIRMED",
+            subtotal = subtotal,
+            grandTotal = grandTotal,
+            doorstepOtp = otp,
+            quickCommerce = items.any { it.productTitle.contains("15-Min", ignoreCase = true) || it.productTitle.contains("Fresh", ignoreCase = true) },
+            estimatedDeliveryTime = "Arriving in 15 Mins",
+            items = items
         )
+
+        localOrders.add(0, newOrder)
+        _ordersFlow.value = localOrders.toList()
+
+        // Update Coins
+        if (coinsUsed > 0) {
+            _coinBalanceFlow.value = maxOf(0, _coinBalanceFlow.value - coinsUsed)
+        }
+        val earned = (grandTotal * 0.05).toInt()
+        _coinBalanceFlow.value += earned
+
+        return newOrder
     }
 
     suspend fun getLiveTracking(orderNumber: String): LiveTrackingDto {
@@ -404,12 +513,14 @@ object CommerceRepository {
         }
     }
 
-    private fun getDemoLiveTracking(orderNumber: String): LiveTrackingDto {
+    fun getDemoLiveTracking(orderNumber: String): LiveTrackingDto {
+        val order = localOrders.find { it.orderNumber == orderNumber }
+        val otp = order?.doorstepOtp ?: "4829"
         return LiveTrackingDto(
             orderNumber = orderNumber,
-            status = "OUT_FOR_DELIVERY",
-            estimatedDeliveryTime = "Arriving in 3 Mins",
-            doorstepOtp = "4829",
+            status = order?.status ?: "OUT_FOR_DELIVERY",
+            estimatedDeliveryTime = order?.estimatedDeliveryTime ?: "Arriving in 3 Mins",
+            doorstepOtp = otp,
             customerLat = 12.9716,
             customerLng = 77.5946,
             darkstoreLat = 12.9780,

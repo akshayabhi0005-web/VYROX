@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -19,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.veltrion.vyrox.data.repository.AuthRepository
+import com.veltrion.vyrox.data.repository.CommerceRepository
 import com.veltrion.vyrox.ui.theme.VyroxNavy
 import com.veltrion.vyrox.ui.theme.VyroxOrange
 
@@ -32,6 +34,8 @@ fun AccountScreen(
     onNavigateToAddress: () -> Unit = {}
 ) {
     val currentUser by AuthRepository.currentUser.collectAsState()
+    val orders by CommerceRepository.ordersFlow.collectAsState()
+    val coins by CommerceRepository.coinBalanceFlow.collectAsState()
 
     Column(modifier = Modifier.fillMaxSize().background(Color(0xFFF8F9FD))) {
         // Top Header
@@ -90,7 +94,7 @@ fun AccountScreen(
                             Text(text = "🪙", fontSize = 12.sp)
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = "${currentUser!!.coinBalance ?: 350}",
+                                text = "$coins",
                                 fontWeight = FontWeight.Black,
                                 color = Color(0xFF92400E),
                                 fontSize = 13.sp
@@ -98,7 +102,7 @@ fun AccountScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
 
                     // VIP Promo banner
                     Card(
@@ -147,26 +151,27 @@ fun AccountScreen(
             }
         }
 
-        // Account Quick Nav Grid (Orders, Wishlist, Coupons, Help Center)
+        // Account Content (Recent Orders, Wishlist, Coupons, Addresses, Help Center)
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            // Quick Nav Tiles
             item {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    AccountNavTile("Orders", Icons.Default.Inventory2, Modifier.weight(1f)) {
-                        onNavigateToTracking("VYR-2026-90412")
-                    }
                     AccountNavTile("Wishlist", Icons.Default.Favorite, Modifier.weight(1f)) {
                         onNavigateToWishlist()
+                    }
+                    AccountNavTile("Coupons", Icons.Default.LocalOffer, Modifier.weight(1f)) {
+                        onNavigateToCoupons()
                     }
                 }
             }
 
             item {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    AccountNavTile("Coupons", Icons.Default.LocalOffer, Modifier.weight(1f)) {
-                        onNavigateToCoupons()
+                    AccountNavTile("Saved Addresses", Icons.Default.LocationOn, Modifier.weight(1f)) {
+                        onNavigateToAddress()
                     }
                     AccountNavTile("Help Center", Icons.Default.Headphones, Modifier.weight(1f)) {
                         onNavigateToHelpCenter()
@@ -174,9 +179,93 @@ fun AccountScreen(
                 }
             }
 
+            // Recent Orders Section
             item {
-                AccountNavTile("Saved Addresses & Location", Icons.Default.LocationOn, Modifier.fillMaxWidth()) {
-                    onNavigateToAddress()
+                Text(
+                    text = "My Orders (${orders.size})",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Black,
+                    color = VyroxNavy,
+                    modifier = Modifier.padding(top = 10.dp)
+                )
+            }
+
+            items(orders) { order ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    shape = RoundedCornerShape(16.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                ) {
+                    Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Order #${order.orderNumber}",
+                                fontWeight = FontWeight.Black,
+                                fontSize = 13.sp,
+                                color = VyroxNavy
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(
+                                        when (order.status) {
+                                            "DELIVERED" -> Color(0xFFECFDF5)
+                                            "OUT_FOR_DELIVERY" -> Color(0xFFFFF7ED)
+                                            else -> Color(0xFFEFF6FF)
+                                        }
+                                    )
+                                    .padding(horizontal = 8.dp, vertical = 3.dp)
+                            ) {
+                                Text(
+                                    text = order.status,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = when (order.status) {
+                                        "DELIVERED" -> Color(0xFF047857)
+                                        "OUT_FOR_DELIVERY" -> VyroxOrange
+                                        else -> Color(0xFF1D4ED8)
+                                    }
+                                )
+                            }
+                        }
+
+                        order.items.forEach { itm ->
+                            Text(
+                                text = "• ${itm.productTitle.take(45)} (Qty: ${itm.quantity})",
+                                fontSize = 11.sp,
+                                color = Color(0xFF334155),
+                                maxLines = 1
+                            )
+                        }
+
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 2.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Total: ₹${order.grandTotal.toInt()}",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                color = VyroxNavy
+                            )
+                            Button(
+                                onClick = { onNavigateToTracking(order.orderNumber) },
+                                colors = ButtonDefaults.buttonColors(containerColor = VyroxNavy),
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Text("Track on Map →", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
                 }
             }
 

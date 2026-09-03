@@ -80,7 +80,7 @@ fun VyroxAppNavigation() {
                 onNavigateToWishlist = { navController.navigate("wishlist") },
                 onNavigateToCoupons = { navController.navigate("coupons") },
                 onNavigateToHelpCenter = { navController.navigate("help") },
-                onNavigateToCheckout = { navController.navigate("checkout") }
+                onNavigateToCheckout = { navController.navigate("checkout?productId=-1") }
             )
         }
 
@@ -93,7 +93,12 @@ fun VyroxAppNavigation() {
                 productId = productId,
                 onBackClick = { navController.popBackStack() },
                 onNavigateToLogin = { navController.navigate("login") },
-                onAddToCartSuccess = { navController.popBackStack() }
+                onNavigateToCart = {
+                    navController.navigate("main")
+                },
+                onNavigateToBuyNow = { pId ->
+                    navController.navigate("checkout?productId=$pId")
+                }
             )
         }
 
@@ -144,8 +149,16 @@ fun VyroxAppNavigation() {
             )
         }
 
-        composable("checkout") {
+        composable(
+            route = "checkout?productId={productId}",
+            arguments = listOf(navArgument("productId") {
+                type = NavType.LongType
+                defaultValue = -1L
+            })
+        ) { backStackEntry ->
+            val productId = backStackEntry.arguments?.getLong("productId") ?: -1L
             CheckoutScreen(
+                buyNowProductId = if (productId > 0) productId else null,
                 onBackClick = { navController.popBackStack() },
                 onOrderPlaced = { orderNumber ->
                     navController.navigate("order_tracking/$orderNumber") {

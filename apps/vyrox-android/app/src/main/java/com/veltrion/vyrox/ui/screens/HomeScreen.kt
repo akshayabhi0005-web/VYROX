@@ -47,9 +47,12 @@ fun HomeScreen(
         if (qc.isNotEmpty()) quickCommerce = qc
     }
 
+    val coinBalance by CommerceRepository.coinBalanceFlow.collectAsState()
+
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize().background(Color(0xFFF8F9FD))) {
             VyroxTopBar(
+                coinBalance = coinBalance,
                 onLocationClick = onNavigateToLocation,
                 onSearchClick = onNavigateToDeals,
                 onVoiceSearchResult = { onNavigateToDeals() },
