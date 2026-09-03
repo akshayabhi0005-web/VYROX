@@ -1,0 +1,11 @@
+<resources>
+    <color name="vyrox_navy">#0B192C</color>
+    <color name="vyrox_royal">#1E3E62</color>
+    <color name="vyrox_blue">#2B6CB0</color>
+    <color name="vyrox_cyan">#00D2FF</color>
+    <color name="vyrox_orange">#FF6500</color>
+    <color name="vyrox_light_orange">#FF884B</color>
+    <color name="vyrox_bg">#F8F9FD</color>
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+</resources>

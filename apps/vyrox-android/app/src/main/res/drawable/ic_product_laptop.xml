@@ -1,0 +1,30 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+    <!-- Screen Outer Frame -->
+    <path
+        android:fillColor="#1E293B"
+        android:pathData="M20,24 h80 a6,6 0 0 1 6,6 v50 a2,2 0 0 1 -2,2 h-84 a2,2 0 0 1 -2,-2 v-50 a6,6 0 0 1 6,-6 z" />
+    <!-- Screen Display -->
+    <path
+        android:fillColor="#00D2FF"
+        android:pathData="M24,28 h72 a2,2 0 0 1 2,2 v46 a2,2 0 0 1 -2,2 h-72 a2,2 0 0 1 -2,-2 v-46 a2,2 0 0 1 2,-2 z" />
+    <!-- Display Glow / Content -->
+    <path
+        android:fillColor="#0B192C"
+        android:pathData="M28,32 h64 v38 h-64 z" />
+    <!-- Keyboard Base -->
+    <path
+        android:fillColor="#94A3B8"
+        android:pathData="M12,82 h96 a4,4 0 0 1 4,4 v4 a4,4 0 0 1 -4,4 h-96 a4,4 0 0 1 -4,-4 v-4 a4,4 0 0 1 4,-4 z" />
+    <!-- Trackpad -->
+    <path
+        android:fillColor="#CBD5E1"
+        android:pathData="M50,86 h20 a2,2 0 0 1 2,2 v4 a1,1 0 0 1 -1,1 h-22 a1,1 0 0 1 -1,-1 v-4 a2,2 0 0 1 2,-2 z" />
+    <!-- Apple / Pro Logo Accent -->
+    <path
+        android:fillColor="#00D2FF"
+        android:pathData="M60,46 a5,5 0 1 0 0,10 a5,5 0 1 0 0,-10 z" />
+</vector>

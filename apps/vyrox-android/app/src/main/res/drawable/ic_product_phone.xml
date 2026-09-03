@@ -1,0 +1,29 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+    <!-- Phone Outer Body -->
+    <path
+        android:fillColor="#0B192C"
+        android:pathData="M38,16 h44 a10,10 0 0 1 10,10 v68 a10,10 0 0 1 -10,10 h-44 a10,10 0 0 1 -10,-10 v-68 a10,10 0 0 1 10,-10 z" />
+    <!-- Screen Glass -->
+    <path
+        android:fillColor="#1E3E62"
+        android:pathData="M42,20 h36 a6,6 0 0 1 6,6 v68 a6,6 0 0 1 -6,6 h-36 a6,6 0 0 1 -6,-6 v-68 a6,6 0 0 1 6,-6 z" />
+    <!-- Dynamic Island / Punch Hole -->
+    <path
+        android:fillColor="#0B192C"
+        android:pathData="M54,24 h12 a3,3 0 0 1 3,3 v0 a3,3 0 0 1 -3,3 h-12 a3,3 0 0 1 -3,-3 v0 a3,3 0 0 1 3,-3 z" />
+    <!-- Wallpaper Gradient Glow -->
+    <path
+        android:fillColor="#00D2FF"
+        android:pathData="M46,45 a14,14 0 1 0 28,0 a14,14 0 1 0 -28,0 z" />
+    <path
+        android:fillColor="#FF6500"
+        android:pathData="M52,65 a10,10 0 1 0 20,0 a10,10 0 1 0 -20,0 z" />
+    <!-- Home Bar -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M50,94 h20 a2,2 0 0 1 2,2 v0 a2,2 0 0 1 -2,2 h-20 a2,2 0 0 1 -2,-2 v0 a2,2 0 0 1 2,-2 z" />
+</vector>

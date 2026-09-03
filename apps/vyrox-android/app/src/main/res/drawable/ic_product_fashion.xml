@@ -1,0 +1,22 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+    <!-- Sneaker Upper -->
+    <path
+        android:fillColor="#FF6500"
+        android:pathData="M24,70 C24,60 38,42 56,42 C64,42 74,52 82,54 L98,62 C104,66 104,74 96,76 L24,76 Z" />
+    <!-- Sneaker Sole -->
+    <path
+        android:fillColor="#0B192C"
+        android:pathData="M20,76 h84 a4,4 0 0 1 4,4 v6 a4,4 0 0 1 -4,4 h-84 a4,4 0 0 1 -4,-4 v-6 a4,4 0 0 1 4,-4 z" />
+    <!-- Air Cushion / Accent -->
+    <path
+        android:fillColor="#00D2FF"
+        android:pathData="M28,80 h22 a2,2 0 0 1 2,2 v4 a1,1 0 0 1 -1,1 h-24 a1,1 0 0 1 -1,-1 v-4 a2,2 0 0 1 2,-2 z" />
+    <!-- Swoosh / Stripe -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M48,60 C62,56 78,64 88,72 L80,72 C70,66 58,62 48,60 Z" />
+</vector>

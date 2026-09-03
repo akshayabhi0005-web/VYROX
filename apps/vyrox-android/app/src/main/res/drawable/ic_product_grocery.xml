@@ -1,0 +1,21 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+    <!-- Juice / Grocery Bottle/Pack -->
+    <path
+        android:fillColor="#FF6500"
+        android:pathData="M44,18 h32 a4,4 0 0 1 4,4 v8 a4,4 0 0 1 -4,4 h-32 a4,4 0 0 1 -4,-4 v-8 a4,4 0 0 1 4,-4 z" />
+    <path
+        android:fillColor="#FFB300"
+        android:pathData="M34,34 h52 a10,10 0 0 1 10,10 v56 a12,12 0 0 1 -12,12 h-48 a12,12 0 0 1 -12,-12 v-56 a10,10 0 0 1 10,-10 z" />
+    <!-- Juice Glass Level / Label -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M40,54 h40 a4,4 0 0 1 4,4 v28 a4,4 0 0 1 -4,4 h-40 a4,4 0 0 1 -4,-4 v-28 a4,4 0 0 1 4,-4 z" />
+    <!-- Leaf / Fresh Accent -->
+    <path
+        android:fillColor="#10B981"
+        android:pathData="M52,62 C62,58 68,70 66,78 C56,76 50,68 52,62 Z" />
+</vector>

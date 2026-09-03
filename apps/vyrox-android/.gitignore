@@ -1,0 +1,23 @@
+*.iml
+.gradle
+/local.properties
+/.idea
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+*.hprof
+*.hprof*
+
+# Keystores & release artifacts
+*.apk
+*.aab
+*.jks
+*.keystore
+
+# Environment files
+.env
+.env.*
+!.env.example

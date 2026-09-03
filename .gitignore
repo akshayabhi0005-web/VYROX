@@ -1,0 +1,62 @@
+# Environment Variables & Secrets
+.env
+.env.*
+!.env.example
+*.env
+*.local
+credentials.json
+*.pem
+*.key
+*.p12
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Logs & Dumps
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.hprof
+*.hprof*
+
+# Node / Web
+node_modules/
+dist/
+dist-ssr/
+*.tsbuildinfo
+.eslintcache
+
+# Maven / Java
+target/
+*.class
+*.jar
+*.war
+*.ear
+
+# Gradle / Android
+.gradle/
+build/
+app/build/
+*.apk
+*.aab
+*.jks
+*.keystore
+local.properties
+.cxx/
+captures/
+.externalNativeBuild/
+
+# IDE & Editors
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+*.swp
+*.swo
+.project
+.classpath
+.settings/
+.gemini/

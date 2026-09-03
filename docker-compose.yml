@@ -1,0 +1,101 @@
+version: '3.8'
+
+services:
+  # 1. PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: vyrox-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: vyroxdb
+      POSTGRES_USER: vyrox_user
+      POSTGRES_PASSWORD: vyrox_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vyrox_user -d vyroxdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # 2. Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: vyrox-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  # 3. Spring Boot Backend Service (Java 21)
+  vyrox-backend:
+    build:
+      context: ./services/vyrox-backend
+      dockerfile: Dockerfile
+    container_name: vyrox-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    ports:
+      - "8080:8080"
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/vyroxdb
+      DB_USERNAME: vyrox_user
+      DB_PASSWORD: vyrox_password
+      DB_DRIVER: org.postgresql.Driver
+      HIBERNATE_DIALECT: org.hibernate.dialect.PostgreSQLDialect
+      JWT_SECRET: ${JWT_SECRET:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      FACEBOOK_APP_ID: ${FACEBOOK_APP_ID:-}
+      FACEBOOK_APP_SECRET: ${FACEBOOK_APP_SECRET:-}
+      SMS_PROVIDER_API_KEY: ${SMS_PROVIDER_API_KEY:-}
+      DEV_MODE_OTP: 123456
+
+  # 4. Realtime GPS Tracking & WebSocket Service
+  tracking-service:
+    build:
+      context: ./services/tracking-realtime-service
+      dockerfile: Dockerfile
+    container_name: vyrox-tracking
+    restart: unless-stopped
+    ports:
+      - "8091:8091"
+    environment:
+      PORT: 8091
+
+  # 5. AI Shopping Assistant Microservice
+  ai-service:
+    build:
+      context: ./services/ai-service
+      dockerfile: Dockerfile
+    container_name: vyrox-ai
+    restart: unless-stopped
+    ports:
+      - "8093:8093"
+    environment:
+      PORT: 8093
+
+  # 6. React Web Application
+  vyrox-web:
+    build:
+      context: ./apps/vyrox-web
+      dockerfile: Dockerfile
+    container_name: vyrox-web
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      VITE_API_URL: http://localhost:8080/api/v1
+    depends_on:
+      - vyrox-backend
+
+volumes:
+  postgres_data:
+  redis_data:

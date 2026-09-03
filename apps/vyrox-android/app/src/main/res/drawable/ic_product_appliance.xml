@@ -1,0 +1,18 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+    <!-- Airfryer Outer Body -->
+    <path
+        android:fillColor="#0B192C"
+        android:pathData="M32,24 h56 a12,12 0 0 1 12,12 v52 a16,16 0 0 1 -16,16 h-48 a16,16 0 0 1 -16,-16 v-52 a12,12 0 0 1 12,-12 z" />
+    <!-- Digital Display -->
+    <path
+        android:fillColor="#00D2FF"
+        android:pathData="M42,34 h36 a4,4 0 0 1 4,4 v14 a4,4 0 0 1 -4,4 h-36 a4,4 0 0 1 -4,-4 v-14 a4,4 0 0 1 4,-4 z" />
+    <!-- Basket Handle -->
+    <path
+        android:fillColor="#FF6500"
+        android:pathData="M52,66 h16 a4,4 0 0 1 4,4 v18 a4,4 0 0 1 -4,4 h-16 a4,4 0 0 1 -4,-4 v-18 a4,4 0 0 1 4,-4 z" />
+</vector>
