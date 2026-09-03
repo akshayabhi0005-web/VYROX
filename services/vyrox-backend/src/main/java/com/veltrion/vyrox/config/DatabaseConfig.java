@@ -54,7 +54,7 @@ public class DatabaseConfig {
         String finalUsername = envUsername != null ? envUsername.trim() : "";
         String finalPassword = envPassword != null ? envPassword.trim() : "";
 
-        // Normalize postgres:// or postgresql:// URIs into standard JDBC format if provided without jdbc: prefix
+        // Normalize postgres:// or postgresql:// URIs into standard JDBC format
         if (jdbcUrl.startsWith("postgres://") || jdbcUrl.startsWith("postgresql://")) {
             try {
                 URI uri = new URI(jdbcUrl);
@@ -70,7 +70,7 @@ public class DatabaseConfig {
                 }
                 String host = uri.getHost();
                 int port = uri.getPort() > 0 ? uri.getPort() : 5432;
-                String path = uri.getPath() != null ? uri.getPath() : "/postgres";
+                String path = uri.getPath() != null && !uri.getPath().isEmpty() ? uri.getPath() : "/postgres";
                 String query = uri.getQuery() != null ? "?" + uri.getQuery() : "?sslmode=require";
                 if (!query.contains("sslmode")) {
                     query += (query.startsWith("?") ? "&" : "?") + "sslmode=require";
@@ -94,7 +94,7 @@ public class DatabaseConfig {
             }
         }
 
-        // Safe URL logging (mask credentials if any)
+        // Safe URL logging (mask credentials)
         String maskedUrl = jdbcUrl.replaceAll(":[^/@]+@", ":****@");
         logger.info("Configuring VYROX DataSource. Target: {}, Driver: {}, User: {}", 
                 maskedUrl, driverClass, finalUsername);
@@ -109,7 +109,7 @@ public class DatabaseConfig {
             config.setPassword(finalPassword);
         }
 
-        // Production-ready connection pool tuning
+        // Production-ready connection pool tuning for Supabase Session Pooler
         config.setMaximumPoolSize(10);
         config.setMinimumIdle(2);
         config.setConnectionTimeout(30000); // 30s timeout
@@ -117,6 +117,12 @@ public class DatabaseConfig {
         config.setMaxLifetime(600000);      // 10 min
         config.setValidationTimeout(5000);  // 5s
         config.setPoolName("VyroxHikariPool");
+
+        if (jdbcUrl.startsWith("jdbc:postgresql:")) {
+            config.addDataSourceProperty("tcpKeepAlive", "true");
+            config.addDataSourceProperty("connectTimeout", "30");
+            config.addDataSourceProperty("socketTimeout", "60");
+        }
 
         return new HikariDataSource(config);
     }

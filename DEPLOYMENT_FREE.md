@@ -31,18 +31,18 @@ The VYROX platform is architected for zero-cost deployment using industry-standa
    - **Database Password:** Enter a strong password (e.g., alphanumeric with special symbols). **Save this password securely.**
    - **Region:** Choose the region closest to your target users (e.g., `ap-south-1` for Mumbai / Bengaluru).
    - **Pricing Plan:** Free ($0/month).
-3. Once provisioning completes (approx. 1 minute), navigate to **Project Settings** (gear icon at bottom left) $\rightarrow$ **Database**:
-   - Scroll down to the **Connection parameters** / **Connection string** section.
-   - Switch the format dropdown from `Node.js` / `URI` to **JDBC**.
-   - Note the JDBC URL pattern:
-     ```
-     jdbc:postgresql://db.YOUR_PROJECT_REF.supabase.co:5432/postgres?sslmode=require
-     ```
-   - **Database Host:** `db.YOUR_PROJECT_REF.supabase.co`
-   - **Database Port:** `5432`
+3. **Get Supavisor Session Pooler (IPv4) Connection Information:**
+   - In Supabase, click **"Connect"** button (top right of dashboard) or navigate to **Project Settings $\rightarrow$ Database $\rightarrow$ Connection Pooler**.
+   - Select **"Session pooler"** (Port **5432**, IPv4 compatible).
+     > ⚠️ **CRITICAL FOR RENDER:** Render free tier uses IPv4 outbound routing. Do **NOT** use direct database host `db.xxx.supabase.co` (which uses IPv6). Use the **Session pooler** host (`aws-0-[region].pooler.supabase.com`). Do **NOT** use Transaction pooler port 6543 because Hibernate requires prepared statements.
+   - **Session Pooler Host:** `aws-0-[REGION].pooler.supabase.com`
+   - **Port:** `5432`
    - **Database Name:** `postgres`
-   - **Database Username:** `postgres`
-   - **Database Password:** `[YOUR-PASSWORD]`
+   - **Username:** `postgres.[YOUR-PROJECT-REF]`
+   - **JDBC URL:**
+     ```
+     jdbc:postgresql://aws-0-[REGION].pooler.supabase.com:5432/postgres?sslmode=require
+     ```
 4. **Automatic Schema & Data Initialization:**
    - The VYROX backend Spring Data JPA engine automatically initializes and updates all relational tables (`users`, `products`, `sellers`, `categories`, `orders`, `cart_items`, `wishlist_items`, `addresses`, `coupons`, `coin_wallets`, `reviews`, `tracking_logs`, etc.) on first boot with `hibernate.ddl-auto: update`.
    - The built-in `DataSeeder` runs automatically when the database is empty, seeding catalog items, admin/customer accounts, coupons, and sample 15-minute quick commerce products.
@@ -58,16 +58,16 @@ The VYROX platform is architected for zero-cost deployment using industry-standa
    - **Root Directory:** `services/vyrox-backend`
    - **Environment:** `Docker`
    - **Plan:** `Free` ($0/month)
-3. Under **Advanced / Environment Variables**, configure the database connection values from Supabase:
+3. Under **Advanced / Environment Variables**, configure the database connection values using the Supabase Session Pooler:
 
    | Key | Value (Example / Placeholder) |
    | :--- | :--- |
    | `PORT` | `10000` *(Render sets this automatically)* |
    | `DEMO_MODE` | `true` *(Enables safe dev mock features when OAuth is unconfigured)* |
-   | `DATABASE_URL` | `jdbc:postgresql://db.YOUR_PROJECT_REF.supabase.co:5432/postgres?sslmode=require` |
-   | `DB_USERNAME` | `postgres` |
+   | `DATABASE_URL` | `jdbc:postgresql://aws-0-[REGION].pooler.supabase.com:5432/postgres?sslmode=require` |
+   | `DB_USERNAME` | `postgres.[YOUR-PROJECT-REF]` |
    | `DB_PASSWORD` | `YOUR_SUPABASE_DATABASE_PASSWORD` |
-   | `CORS_ALLOWED_ORIGINS` | `https://YOUR_CLOUDFLARE_PAGES_URL.pages.dev,http://localhost:3000` |
+   | `CORS_ALLOWED_ORIGINS` | `*` *(or `https://YOUR_CLOUDFLARE_PAGES_URL.pages.dev,http://localhost:3000`)* |
    | `JWT_SECRET` | `YOUR_SECURE_RANDOM_JWT_SECRET_STRING` |
    | `GOOGLE_CLIENT_ID` | `YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com` *(Optional)* |
    | `GOOGLE_CLIENT_SECRET` | `YOUR_GOOGLE_CLIENT_SECRET` *(Optional)* |
