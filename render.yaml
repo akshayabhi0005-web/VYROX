@@ -1,0 +1,29 @@
+services:
+  # VYROX Web Frontend (Vite + React Static Site)
+  - type: web
+    name: vyrox-web
+    env: static
+    rootDir: apps/vyrox-web
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://vyrox-backend-rg3r.onrender.com/api/v1
+
+  # VYROX Backend Service (Spring Boot + Java 21)
+  - type: web
+    name: vyrox-backend
+    env: docker
+    rootDir: services/vyrox-backend
+    dockerfilePath: services/vyrox-backend/Dockerfile
+    plan: free
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://vyrox-web.onrender.com,http://localhost:5173,http://localhost:3000

@@ -1,0 +1,10 @@
+{
+  "name": "vyrox-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "install:all": "npm install --prefix apps/vyrox-web",
+    "build": "npm run build --prefix apps/vyrox-web && node -e \"const fs = require('fs'); if (fs.existsSync('apps/vyrox-web/dist')) { fs.cpSync('apps/vyrox-web/dist', 'dist', { recursive: true }); }\"",
+    "start": "npm run preview --prefix apps/vyrox-web"
+  }
+}
