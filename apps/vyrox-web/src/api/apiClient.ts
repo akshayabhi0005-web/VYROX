@@ -1,6 +1,10 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 
+  import.meta.env.VITE_API_URL || 
+  (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+    ? 'https://vyrox-backend-rg3r.onrender.com/api/v1'
+    : 'http://localhost:8080/api/v1');
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -22,7 +26,7 @@ apiClient.interceptors.response.use(
   async (error) => {
     if (error.response?.status === 401) {
       // Don't auto-redirect if browsing public paths
-      const isPublicPath = ['/login', '/register', '/', '/top-deals'].includes(window.location.pathname) ||
+      const isPublicPath = ['/login', '/register', '/', '/top-deals', '/compare'].includes(window.location.pathname) ||
                            window.location.pathname.startsWith('/product/');
       if (!isPublicPath) {
         localStorage.removeItem('vyrox_access_token');

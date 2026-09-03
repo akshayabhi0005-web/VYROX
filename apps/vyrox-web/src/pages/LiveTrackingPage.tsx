@@ -45,7 +45,10 @@ export const LiveTrackingPage: React.FC = () => {
     fetchTracking();
 
     // Connect to WebSocket realtime tracking service if available
-    const wsUrl = import.meta.env.VITE_WS_BASE_URL || 'ws://localhost:8091';
+    const wsUrl = import.meta.env.VITE_WS_BASE_URL || 
+      (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+        ? 'wss://vyrox-backend-rg3r.onrender.com/ws'
+        : 'ws://localhost:8091');
     let socket: WebSocket | null = null;
     try {
       socket = new WebSocket(wsUrl);

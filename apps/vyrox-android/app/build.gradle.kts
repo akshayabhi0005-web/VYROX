@@ -39,7 +39,7 @@ android {
 
     buildTypes {
         release {
-            val releaseApiUrl = System.getenv("RELEASE_API_BASE_URL") ?: "https://api.vyrox.com/api/v1/"
+            val releaseApiUrl = System.getenv("RELEASE_API_BASE_URL") ?: "https://vyrox-backend-rg3r.onrender.com/api/v1/"
             buildConfigField("String", "API_BASE_URL", "\"$releaseApiUrl\"")
             isMinifyEnabled = false
             proguardFiles(
