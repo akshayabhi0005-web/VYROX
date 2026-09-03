@@ -16,6 +16,8 @@ fun MainContainerScreen(
     onNavigateToTracking: (String) -> Unit,
     onNavigateToAi: () -> Unit = {},
     onNavigateToLocation: () -> Unit = {},
+    onNavigateToOrders: () -> Unit = {},
+    onNavigateToCoins: () -> Unit = {},
     onNavigateToWishlist: () -> Unit = {},
     onNavigateToCoupons: () -> Unit = {},
     onNavigateToHelpCenter: () -> Unit = {},
@@ -54,6 +56,8 @@ fun MainContainerScreen(
                     AccountScreen(
                         onNavigateToLogin = onNavigateToLogin,
                         onNavigateToTracking = onNavigateToTracking,
+                        onNavigateToOrders = onNavigateToOrders,
+                        onNavigateToCoins = onNavigateToCoins,
                         onNavigateToWishlist = onNavigateToWishlist,
                         onNavigateToCoupons = onNavigateToCoupons,
                         onNavigateToHelpCenter = onNavigateToHelpCenter,

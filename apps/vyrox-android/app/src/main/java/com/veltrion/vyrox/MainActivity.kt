@@ -77,6 +77,8 @@ fun VyroxAppNavigation() {
                 },
                 onNavigateToAi = { navController.navigate("ai") },
                 onNavigateToLocation = { navController.navigate("address") },
+                onNavigateToOrders = { navController.navigate("orders") },
+                onNavigateToCoins = { navController.navigate("coins") },
                 onNavigateToWishlist = { navController.navigate("wishlist") },
                 onNavigateToCoupons = { navController.navigate("coupons") },
                 onNavigateToHelpCenter = { navController.navigate("help") },
@@ -109,6 +111,21 @@ fun VyroxAppNavigation() {
             val orderNumber = backStackEntry.arguments?.getString("orderNumber") ?: "VYR-2026-90412"
             OrderTrackingScreen(
                 orderNumber = orderNumber,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable("orders") {
+            OrdersScreen(
+                onBackClick = { navController.popBackStack() },
+                onNavigateToTracking = { orderNumber ->
+                    navController.navigate("order_tracking/$orderNumber")
+                }
+            )
+        }
+
+        composable("coins") {
+            CoinsScreen(
                 onBackClick = { navController.popBackStack() }
             )
         }

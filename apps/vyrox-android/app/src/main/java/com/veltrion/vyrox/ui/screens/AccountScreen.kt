@@ -28,6 +28,8 @@ import com.veltrion.vyrox.ui.theme.VyroxOrange
 fun AccountScreen(
     onNavigateToLogin: () -> Unit,
     onNavigateToTracking: (String) -> Unit,
+    onNavigateToOrders: () -> Unit = {},
+    onNavigateToCoins: () -> Unit = {},
     onNavigateToWishlist: () -> Unit = {},
     onNavigateToCoupons: () -> Unit = {},
     onNavigateToHelpCenter: () -> Unit = {},
@@ -55,16 +57,16 @@ fun AccountScreen(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Box(
                                 modifier = Modifier
-                                    .size(48.dp)
+                                    .size(50.dp)
                                     .clip(CircleShape)
                                     .background(VyroxNavy),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    text = currentUser!!.fullName.take(1),
+                                    text = currentUser!!.fullName.take(1).uppercase(),
                                     color = Color.White,
                                     fontWeight = FontWeight.Black,
-                                    fontSize = 20.sp
+                                    fontSize = 22.sp
                                 )
                             }
                             Spacer(modifier = Modifier.width(12.dp))
@@ -76,7 +78,7 @@ fun AccountScreen(
                                     color = VyroxNavy
                                 )
                                 Text(
-                                    text = currentUser!!.email ?: currentUser!!.mobile ?: "",
+                                    text = currentUser!!.email ?: currentUser!!.mobile ?: "customer@vyrox.com",
                                     fontSize = 11.sp,
                                     color = Color.Gray
                                 )
@@ -84,21 +86,25 @@ fun AccountScreen(
                         }
 
                         // Coins Chip
-                        Row(
+                        Surface(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(12.dp))
-                                .background(Color(0xFFFEF3C7))
-                                .padding(horizontal = 10.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                                .clickable { onNavigateToCoins() },
+                            color = Color(0xFFFEF3C7)
                         ) {
-                            Text(text = "🪙", fontSize = 12.sp)
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "$coins",
-                                fontWeight = FontWeight.Black,
-                                color = Color(0xFF92400E),
-                                fontSize = 13.sp
-                            )
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(text = "🪙", fontSize = 13.sp)
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "$coins",
+                                    fontWeight = FontWeight.Black,
+                                    color = Color(0xFF92400E),
+                                    fontSize = 13.sp
+                                )
+                            }
                         }
                     }
 
@@ -119,7 +125,7 @@ fun AccountScreen(
                                 letterSpacing = 1.sp
                             )
                             Text(
-                                text = "Unlimited Free 15-Min Delivery & 5% Cashback",
+                                text = "Unlimited Free 15-Min Delivery & 5% SuperCoins Cashback",
                                 color = Color.White,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.SemiBold
@@ -138,25 +144,45 @@ fun AccountScreen(
                             fontWeight = FontWeight.Black,
                             color = VyroxNavy
                         )
-                        Spacer(modifier = Modifier.height(10.dp))
+                        Text(
+                            text = "Log in to track orders, earn 5% SuperCoins & save addresses",
+                            fontSize = 12.sp,
+                            color = Color.Gray,
+                            modifier = Modifier.padding(top = 2.dp)
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
                         Button(
                             onClick = onNavigateToLogin,
-                            colors = ButtonDefaults.buttonColors(containerColor = VyroxNavy),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = VyroxNavy,
+                                contentColor = Color.White
+                            ),
                             shape = RoundedCornerShape(12.dp)
                         ) {
-                            Text("Login / Sign Up", fontWeight = FontWeight.Bold)
+                            Text("Login / Sign Up", fontWeight = FontWeight.Bold, color = Color.White)
                         }
                     }
                 }
             }
         }
 
-        // Account Content (Recent Orders, Wishlist, Coupons, Addresses, Help Center)
+        // Account Content
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // Quick Nav Tiles
+            // Core Account Navigation Grid
+            item {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    AccountNavTile("My Orders (${orders.size})", Icons.Default.ShoppingBag, Modifier.weight(1f)) {
+                        onNavigateToOrders()
+                    }
+                    AccountNavTile("SuperCoins ($coins)", Icons.Default.MonetizationOn, Modifier.weight(1f)) {
+                        onNavigateToCoins()
+                    }
+                }
+            }
+
             item {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     AccountNavTile("Wishlist", Icons.Default.Favorite, Modifier.weight(1f)) {
@@ -179,90 +205,108 @@ fun AccountScreen(
                 }
             }
 
-            // Recent Orders Section
-            item {
-                Text(
-                    text = "My Orders (${orders.size})",
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Black,
-                    color = VyroxNavy,
-                    modifier = Modifier.padding(top = 10.dp)
-                )
-            }
+            // Recent Orders Quick View
+            if (orders.isNotEmpty()) {
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Recent Order",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Black,
+                            color = VyroxNavy
+                        )
+                        Text(
+                            text = "View All →",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = VyroxOrange,
+                            modifier = Modifier.clickable { onNavigateToOrders() }
+                        )
+                    }
+                }
 
-            items(orders) { order ->
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    shape = RoundedCornerShape(16.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-                ) {
-                    Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "Order #${order.orderNumber}",
-                                fontWeight = FontWeight.Black,
-                                fontSize = 13.sp,
-                                color = VyroxNavy
-                            )
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .background(
-                                        when (order.status) {
-                                            "DELIVERED" -> Color(0xFFECFDF5)
-                                            "OUT_FOR_DELIVERY" -> Color(0xFFFFF7ED)
-                                            else -> Color(0xFFEFF6FF)
-                                        }
-                                    )
-                                    .padding(horizontal = 8.dp, vertical = 3.dp)
+                item {
+                    val latestOrder = orders.first()
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        shape = RoundedCornerShape(16.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = order.status,
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = when (order.status) {
-                                        "DELIVERED" -> Color(0xFF047857)
-                                        "OUT_FOR_DELIVERY" -> VyroxOrange
-                                        else -> Color(0xFF1D4ED8)
-                                    }
+                                    text = "Order #${latestOrder.orderNumber}",
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 13.sp,
+                                    color = VyroxNavy
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(
+                                            when (latestOrder.status) {
+                                                "DELIVERED" -> Color(0xFFECFDF5)
+                                                "OUT_FOR_DELIVERY" -> Color(0xFFFFF7ED)
+                                                else -> Color(0xFFEFF6FF)
+                                            }
+                                        )
+                                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                                ) {
+                                    Text(
+                                        text = latestOrder.status,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = when (latestOrder.status) {
+                                            "DELIVERED" -> Color(0xFF047857)
+                                            "OUT_FOR_DELIVERY" -> VyroxOrange
+                                            else -> Color(0xFF1D4ED8)
+                                        }
+                                    )
+                                }
+                            }
+
+                            latestOrder.items.forEach { itm ->
+                                Text(
+                                    text = "• ${itm.productTitle.take(45)} (Qty: ${itm.quantity})",
+                                    fontSize = 11.sp,
+                                    color = Color(0xFF334155),
+                                    maxLines = 1
                                 )
                             }
-                        }
 
-                        order.items.forEach { itm ->
-                            Text(
-                                text = "• ${itm.productTitle.take(45)} (Qty: ${itm.quantity})",
-                                fontSize = 11.sp,
-                                color = Color(0xFF334155),
-                                maxLines = 1
-                            )
-                        }
+                            HorizontalDivider(color = Color(0xFFF1F5F9))
 
-                        HorizontalDivider(modifier = Modifier.padding(vertical = 2.dp))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "Total: ₹${order.grandTotal.toInt()}",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp,
-                                color = VyroxNavy
-                            )
-                            Button(
-                                onClick = { onNavigateToTracking(order.orderNumber) },
-                                colors = ButtonDefaults.buttonColors(containerColor = VyroxNavy),
-                                shape = RoundedCornerShape(8.dp),
-                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text("Track on Map →", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                Text(
+                                    text = "Total: ₹${latestOrder.grandTotal.toInt()}",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp,
+                                    color = VyroxNavy
+                                )
+                                Button(
+                                    onClick = { onNavigateToTracking(latestOrder.orderNumber) },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = VyroxNavy,
+                                        contentColor = Color.White
+                                    ),
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                                ) {
+                                    Text("Track on Map →", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                }
                             }
                         }
                     }
@@ -272,7 +316,7 @@ fun AccountScreen(
             // Finance Options Section
             item {
                 Text(
-                    text = "Finance & Payment Options",
+                    text = "Finance & Payment Services",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     color = VyroxNavy,
@@ -287,24 +331,30 @@ fun AccountScreen(
                     shape = RoundedCornerShape(16.dp)
                 ) {
                     Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        FinanceRow("VYROX Personal Loan", "₹10,00,000 | Instant approval")
-                        HorizontalDivider()
-                        FinanceRow("VYROX Pay Later", "Up to ₹1,00,000 credit line")
-                        HorizontalDivider()
-                        FinanceRow("VYROX Co-branded Credit Card", "5% Unlimited Cashback")
+                        FinanceRow("VYROX Personal Loan", "₹10,00,000 | Instant pre-approval")
+                        HorizontalDivider(color = Color(0xFFF1F5F9))
+                        FinanceRow("VYROX Pay Later", "Up to ₹1,00,000 credit line at 0% interest")
+                        HorizontalDivider(color = Color(0xFFF1F5F9))
+                        FinanceRow("VYROX Co-branded Credit Card", "5% Unlimited SuperCoins Cashback")
                     }
                 }
             }
 
+            // High-Contrast Clear Logout Button
             if (currentUser != null) {
                 item {
                     Button(
                         onClick = { AuthRepository.setGuestMode() },
                         modifier = Modifier.fillMaxWidth().height(48.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFEE2E2)),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFDC2626),
+                            contentColor = Color.White
+                        ),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text("Logout", color = Color(0xFFB91C1C), fontWeight = FontWeight.Bold)
+                        Icon(Icons.Default.ExitToApp, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Log Out from VYROX", color = Color.White, fontWeight = FontWeight.Bold)
                     }
                 }
             }
