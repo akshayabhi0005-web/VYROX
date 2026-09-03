@@ -74,7 +74,7 @@ fun HelpCenterScreen(
                             colors = ButtonDefaults.buttonColors(containerColor = VyroxOrange),
                             shape = RoundedCornerShape(10.dp)
                         ) {
-                            Icon(Icons.Default.Chat, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.SupportAgent, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(if (supportTicketCreated) "Ticket #VYR-SUP-891 Opened ✓" else "Chat with Support Specialist", fontWeight = FontWeight.Bold, fontSize = 12.sp)
                         }
