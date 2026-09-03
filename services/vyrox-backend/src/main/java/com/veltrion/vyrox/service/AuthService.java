@@ -45,17 +45,22 @@ public class AuthService {
 
     @Transactional
     public AuthDto.AuthResponse register(AuthDto.RegisterRequest request) {
-        if (request.getEmail() != null && userRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalArgumentException("Email is already registered: " + request.getEmail());
+        String cleanEmail = request.getEmail() != null && !request.getEmail().trim().isEmpty() 
+                ? request.getEmail().trim().toLowerCase() : null;
+        String cleanMobile = request.getMobile() != null && !request.getMobile().trim().isEmpty() 
+                ? request.getMobile().replaceAll("[^0-9]", "") : null;
+
+        if (cleanEmail != null && userRepository.existsByEmail(cleanEmail)) {
+            throw new IllegalArgumentException("Email is already registered: " + cleanEmail);
         }
-        if (request.getMobile() != null && userRepository.existsByMobile(request.getMobile())) {
-            throw new IllegalArgumentException("Mobile number is already registered: " + request.getMobile());
+        if (cleanMobile != null && cleanMobile.length() >= 10 && userRepository.existsByMobile(cleanMobile)) {
+            throw new IllegalArgumentException("Mobile number is already registered: " + cleanMobile);
         }
 
         User user = User.builder()
-                .fullName(request.getFullName())
-                .email(request.getEmail())
-                .mobile(request.getMobile())
+                .fullName(request.getFullName() != null ? request.getFullName().trim() : "VYROX User")
+                .email(cleanEmail)
+                .mobile(cleanMobile)
                 .password(request.getPassword() != null ? passwordEncoder.encode(request.getPassword()) : null)
                 .roles(Set.of(Role.ROLE_CUSTOMER))
                 .emailVerified(false)
@@ -89,9 +94,13 @@ public class AuthService {
     }
 
     public AuthDto.AuthResponse login(AuthDto.LoginRequest request) {
-        User user = userRepository.findByEmail(request.getIdentifier())
-                .or(() -> userRepository.findByMobile(request.getIdentifier()))
-                .orElseThrow(() -> new IllegalArgumentException("Invalid credentials. Account not found."));
+        String identifier = request.getIdentifier() != null ? request.getIdentifier().trim() : "";
+        String cleanEmail = identifier.toLowerCase();
+        String cleanMobile = identifier.replaceAll("[^0-9]", "");
+
+        User user = userRepository.findByEmail(cleanEmail)
+                .or(() -> !cleanMobile.isEmpty() ? userRepository.findByMobile(cleanMobile) : Optional.empty())
+                .orElseThrow(() -> new IllegalArgumentException("Invalid credentials. Account not found with: " + identifier));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new IllegalArgumentException("Invalid email/mobile or password.");

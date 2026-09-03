@@ -6,8 +6,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { apiClient } from '../api/apiClient';
-import { LocationPickerModal } from './LocationPickerModal';
-import { getCurrentGpsCoordinates, reverseGeocode } from '../services/mapService';
+import { SimpleLocationModal } from './SimpleLocationModal';
 
 interface NavbarProps {
   onOpenVoiceSearch: () => void;
@@ -278,12 +277,12 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenVoiceSearch, onOpenImageSe
         </div>
       </div>
 
-      {/* OpenStreetMap Interactive Location Picker Modal */}
-      <LocationPickerModal
+      {/* Simple Location & Pincode Selector Modal (No map on Home) */}
+      <SimpleLocationModal
         isOpen={showLocationModal}
         onClose={() => setShowLocationModal(false)}
-        initialLat={currentLat}
-        initialLng={currentLng}
+        currentCity={currentCity}
+        currentPincode={currentPincode}
         onLocationSelected={handleLocationSelected}
       />
     </header>

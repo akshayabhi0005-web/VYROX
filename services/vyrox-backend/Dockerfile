@@ -12,4 +12,4 @@ COPY --from=builder /app/target/vyrox-backend-1.0.0-SNAPSHOT.jar app.jar
 ENV PORT=8080
 EXPOSE ${PORT}
 
-ENTRYPOINT ["sh", "-c", "java -Dserver.port=${PORT:-8080} -Dserver.address=0.0.0.0 -Djava.security.egd=file:/dev/./urandom -jar app.jar"]
+ENTRYPOINT ["sh", "-c", "java -Djava.net.preferIPv4Stack=true -Djava.net.preferIPv4Addresses=true -Dserver.port=${PORT:-8080} -Dserver.address=0.0.0.0 -Djava.security.egd=file:/dev/./urandom -jar app.jar"]

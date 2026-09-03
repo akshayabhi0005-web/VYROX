@@ -96,7 +96,7 @@ public class DatabaseConfig {
 
         // Safe URL logging (mask credentials)
         String maskedUrl = jdbcUrl.replaceAll(":[^/@]+@", ":****@");
-        logger.info("Configuring VYROX DataSource. Target: {}, Driver: {}, User: {}", 
+        logger.info("Initializing VYROX DataSource. Target URL: {}, Driver: {}, User: {}", 
                 maskedUrl, driverClass, finalUsername);
 
         HikariConfig config = new HikariConfig();
