@@ -220,6 +220,24 @@ object CommerceRepository {
 
     private val localSavedForLaterItems = mutableListOf<CartItemDto>()
 
+    private fun buildLocalCart(): CartResponse {
+        val totalItems = localCartItems.sumOf { it.quantity }
+        val subtotal = localCartItems.sumOf { it.mrp * it.quantity }
+        val grandTotal = localCartItems.sumOf { it.sellingPrice * it.quantity }
+        val savings = subtotal - grandTotal
+        return CartResponse(
+            cartId = 1L,
+            items = localCartItems.toList(),
+            savedForLaterItems = localSavedForLaterItems.toList(),
+            totalItems = totalItems,
+            subtotal = subtotal,
+            totalSavings = savings,
+            deliveryFee = if (grandTotal > 500.0 || localCartItems.isEmpty()) 0.0 else 40.0,
+            grandTotal = grandTotal,
+            potentialCoinsEarned = (grandTotal * 0.05).toInt()
+        )
+    }
+
     private val _cartFlow = MutableStateFlow<CartResponse>(buildLocalCart())
     val cartFlow: StateFlow<CartResponse> = _cartFlow.asStateFlow()
 
@@ -350,31 +368,15 @@ object CommerceRepository {
                 _cartFlow.value = res.body()!!
                 res.body()!!
             } else {
-                buildLocalCart()
+                val local = buildLocalCart()
+                _cartFlow.value = local
+                local
             }
         } catch (e: Exception) {
-            buildLocalCart()
+            val local = buildLocalCart()
+            _cartFlow.value = local
+            local
         }
-    }
-
-    private fun buildLocalCart(): CartResponse {
-        val totalItems = localCartItems.sumOf { it.quantity }
-        val subtotal = localCartItems.sumOf { it.mrp * it.quantity }
-        val grandTotal = localCartItems.sumOf { it.sellingPrice * it.quantity }
-        val savings = subtotal - grandTotal
-        val cartResponse = CartResponse(
-            cartId = 1L,
-            items = localCartItems.toList(),
-            savedForLaterItems = localSavedForLaterItems.toList(),
-            totalItems = totalItems,
-            subtotal = subtotal,
-            totalSavings = savings,
-            deliveryFee = if (grandTotal > 500.0 || localCartItems.isEmpty()) 0.0 else 40.0,
-            grandTotal = grandTotal,
-            potentialCoinsEarned = (grandTotal * 0.05).toInt()
-        )
-        _cartFlow.value = cartResponse
-        return cartResponse
     }
 
     suspend fun addToCart(productId: Long, deltaQuantity: Int = 1): CartResponse {
@@ -411,7 +413,9 @@ object CommerceRepository {
             ApiClient.apiService.addToCart(AddToCartRequest(productId, deltaQuantity))
         } catch (_: Exception) {}
 
-        return buildLocalCart()
+        val updated = buildLocalCart()
+        _cartFlow.value = updated
+        return updated
     }
 
     fun saveForLater(productId: Long): CartResponse {
@@ -420,7 +424,9 @@ object CommerceRepository {
             val item = localCartItems.removeAt(itemIndex)
             localSavedForLaterItems.add(item.copy(savedForLater = true))
         }
-        return buildLocalCart()
+        val updated = buildLocalCart()
+        _cartFlow.value = updated
+        return updated
     }
 
     fun moveToCart(productId: Long): CartResponse {
@@ -429,12 +435,16 @@ object CommerceRepository {
             val item = localSavedForLaterItems.removeAt(itemIndex)
             localCartItems.add(item.copy(savedForLater = false))
         }
-        return buildLocalCart()
+        val updated = buildLocalCart()
+        _cartFlow.value = updated
+        return updated
     }
 
     fun clearCart(): CartResponse {
         localCartItems.clear()
-        return buildLocalCart()
+        val updated = buildLocalCart()
+        _cartFlow.value = updated
+        return updated
     }
 
     fun toggleWishlist(productId: Long): Boolean {
