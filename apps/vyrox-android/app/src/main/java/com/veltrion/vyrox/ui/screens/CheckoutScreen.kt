@@ -180,10 +180,13 @@ fun CheckoutScreen(
                 Button(
                     onClick = { onOrderPlaced(confirmedOrderNumber!!) },
                     modifier = Modifier.fillMaxWidth().height(50.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = VyroxNavy),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = VyroxNavy,
+                        contentColor = Color.White
+                    ),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("Open Live Tracking Radar →", fontWeight = FontWeight.Bold)
+                    Text("Open Live Tracking Radar →", color = Color.White, fontWeight = FontWeight.Bold)
                 }
             }
         } else {
@@ -367,10 +370,13 @@ fun CheckoutScreen(
                         confirmedDoorstepOtp = newOrder.doorstepOtp
                     },
                     modifier = Modifier.fillMaxWidth().height(52.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = VyroxOrange),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = VyroxOrange,
+                        contentColor = Color.White
+                    ),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("Place Order & Pay ₹${grandTotal.toInt()}", fontWeight = FontWeight.Black, fontSize = 15.sp)
+                    Text("Place Order & Pay ₹${grandTotal.toInt()}", color = Color.White, fontWeight = FontWeight.Black, fontSize = 15.sp)
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))

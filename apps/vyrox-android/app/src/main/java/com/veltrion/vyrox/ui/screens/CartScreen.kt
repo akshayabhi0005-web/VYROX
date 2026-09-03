@@ -271,9 +271,12 @@ fun CartScreen(
                                 onClick = onNavigateToCheckout,
                                 modifier = Modifier.height(48.dp),
                                 shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = VyroxOrange)
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = VyroxOrange,
+                                    contentColor = Color.White
+                                )
                             ) {
-                                Text("Proceed to Checkout →", fontWeight = FontWeight.Black, fontSize = 13.sp)
+                                Text("Proceed to Checkout →", color = Color.White, fontWeight = FontWeight.Black, fontSize = 13.sp)
                             }
                         }
                     }

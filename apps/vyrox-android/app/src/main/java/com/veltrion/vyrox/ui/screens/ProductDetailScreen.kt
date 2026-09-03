@@ -137,7 +137,7 @@ fun ProductDetailScreen(
                     ) {
                         Icon(Icons.Default.ShoppingCart, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Add to Cart", fontWeight = FontWeight.Bold)
+                        Text("Add to Cart", color = VyroxNavy, fontWeight = FontWeight.Bold)
                     }
 
                     Button(
@@ -148,11 +148,14 @@ fun ProductDetailScreen(
                             .weight(1f)
                             .height(48.dp),
                         shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = VyroxOrange)
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = VyroxOrange,
+                            contentColor = Color.White
+                        )
                     ) {
-                        Icon(Icons.Default.Bolt, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Bolt, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Buy Now", fontWeight = FontWeight.Black)
+                        Text("Buy Now", color = Color.White, fontWeight = FontWeight.Black)
                     }
                 }
             }

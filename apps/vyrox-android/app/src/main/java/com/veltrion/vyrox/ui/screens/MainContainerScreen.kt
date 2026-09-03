@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import com.veltrion.vyrox.ui.components.BottomNavItem
 import com.veltrion.vyrox.ui.components.VyroxBottomNav
@@ -23,7 +24,7 @@ fun MainContainerScreen(
     onNavigateToHelpCenter: () -> Unit = {},
     onNavigateToCheckout: () -> Unit = {}
 ) {
-    var currentTab by remember { mutableStateOf<String>(BottomNavItem.Home.route) }
+    var currentTab by rememberSaveable { mutableStateOf<String>(BottomNavItem.Home.route) }
 
     Scaffold(
         bottomBar = {

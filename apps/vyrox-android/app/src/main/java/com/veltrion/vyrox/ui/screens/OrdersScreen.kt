@@ -6,7 +6,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -18,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.veltrion.vyrox.data.repository.CommerceRepository
+import com.veltrion.vyrox.ui.components.VyroxPrimaryButton
 import com.veltrion.vyrox.ui.theme.VyroxNavy
 import com.veltrion.vyrox.ui.theme.VyroxOrange
 
@@ -42,7 +43,7 @@ fun OrdersScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = VyroxNavy)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = VyroxNavy)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
@@ -189,14 +190,12 @@ fun OrdersScreen(
                                     }
                                 }
 
-                                Button(
+                                VyroxPrimaryButton(
+                                    text = "Track on Map →",
                                     onClick = { onNavigateToTracking(order.orderNumber) },
-                                    colors = ButtonDefaults.buttonColors(containerColor = VyroxNavy),
-                                    shape = RoundedCornerShape(10.dp),
+                                    fontSize = 12.sp,
                                     contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
-                                ) {
-                                    Text("Track on Map →", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                                }
+                                )
                             }
                         }
                     }

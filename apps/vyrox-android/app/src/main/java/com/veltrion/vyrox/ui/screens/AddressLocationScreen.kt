@@ -130,12 +130,15 @@ fun AddressLocationScreen(
                         }
                     },
                     modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(containerColor = VyroxNavy),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = VyroxNavy,
+                        contentColor = Color.White
+                    ),
                     shape = RoundedCornerShape(10.dp)
                 ) {
-                    Icon(Icons.Default.MyLocation, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Icon(Icons.Default.MyLocation, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Use Current Location (GPS)", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Text("Use Current Location (GPS)", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 }
             }
 
@@ -260,10 +263,13 @@ fun AddressLocationScreen(
                     onSaveAddress(full)
                 },
                 modifier = Modifier.fillMaxWidth().height(50.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = VyroxOrange),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = VyroxOrange,
+                    contentColor = Color.White
+                ),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text("Save & Use This Address", fontWeight = FontWeight.Black, fontSize = 14.sp)
+                Text("Save & Use This Address", color = Color.White, fontWeight = FontWeight.Black, fontSize = 14.sp)
             }
         }
     }
