@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "tsc && vite build && node -e \"const fs = require('fs'); fs.copyFileSync('dist/index.html', 'dist/404.html'); fs.writeFileSync('dist/_redirects', '/*    /index.html   200\\n');\"",
     "preview": "vite preview --port 3000"
   },
   "dependencies": {
