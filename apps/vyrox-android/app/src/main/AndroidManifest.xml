@@ -17,6 +17,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.VYROX"
         android:usesCleartextTraffic="true">
+
         <meta-data
             android:name="com.facebook.sdk.ApplicationId"
             android:value="${FACEBOOK_APP_ID}" />
@@ -26,7 +27,7 @@
             android:value="${FACEBOOK_CLIENT_TOKEN}" />
 
         <activity
-            android:name=".MainActivity"
+            android:name="com.veltrion.vyrox.MainActivity"
             android:exported="true"
             android:theme="@style/Theme.VYROX"
             android:windowSoftInputMode="adjustResize">
