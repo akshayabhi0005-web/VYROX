@@ -7,6 +7,7 @@ import {
 import { ProductDetail, ProductSummary, ProductReview } from '../types';
 import { apiClient } from '../api/apiClient';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 import { ProductCard } from '../components/ProductCard';
 
 import { fallbackProducts, fallbackSummaryList } from '../data/fallbackCatalog';
@@ -15,6 +16,7 @@ export const ProductDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { isAuthenticated, setPendingAction } = useAuth();
+  const { addToCart } = useCart();
 
   const numId = parseInt(id || '1', 10);
   const initialProduct = fallbackProducts.find(p => p.id === numId) || fallbackProducts[0];
@@ -61,77 +63,22 @@ export const ProductDetailPage: React.FC = () => {
       .finally(() => setLoading(false));
   }, [id]);
 
-  const addProductToLocalCart = (prod: ProductDetail) => {
-    try {
-      const savedCartStr = localStorage.getItem('vyrox_local_cart');
-      const localCart = savedCartStr
-        ? JSON.parse(savedCartStr)
-        : { cartId: 1, items: [], savedForLaterItems: [], totalItems: 0, subtotal: 0, totalSavings: 0, deliveryFee: 0, grandTotal: 0 };
-      
-      const existingIndex = localCart.items.findIndex((it: any) => it.productId === prod.id);
-      if (existingIndex >= 0) {
-        localCart.items[existingIndex].quantity += 1;
-      } else {
-        localCart.items.push({
-          itemId: Date.now(),
-          productId: prod.id,
-          productTitle: prod.title,
-          productSku: prod.sku,
-          categoryName: prod.categoryName,
-          brandName: prod.brandName,
-          mainImageUrl: prod.mainImageUrl,
-          mrp: prod.mrp,
-          sellingPrice: prod.sellingPrice,
-          discountPercentage: prod.discountPercentage,
-          quantity: 1,
-          savedForLater: false,
-          estimatedDelivery: prod.estimatedDeliveryDays || 'Tomorrow, by 11 AM',
-          inStock: true,
-        });
-      }
-
-      const subtotal = localCart.items.reduce((s: number, it: any) => s + it.sellingPrice * it.quantity, 0);
-      const totalMrp = localCart.items.reduce((s: number, it: any) => s + it.mrp * it.quantity, 0);
-      localCart.subtotal = subtotal;
-      localCart.totalSavings = Math.max(0, totalMrp - subtotal);
-      localCart.totalItems = localCart.items.reduce((s: number, it: any) => s + it.quantity, 0);
-      localCart.deliveryFee = subtotal > 500 ? 0 : 40;
-      localCart.grandTotal = subtotal + localCart.deliveryFee;
-      localStorage.setItem('vyrox_local_cart', JSON.stringify(localCart));
-    } catch (e) {
-      console.warn('Could not update local cart cache', e);
-    }
-  };
-
   const handleAddToCart = async () => {
     if (!product) return;
     setAddingToCart(true);
-    addProductToLocalCart(product);
-
-    if (isAuthenticated) {
-      try {
-        await apiClient.post('/cart/add', { productId: product.id, quantity: 1 });
-      } catch (err) {
-        console.warn('Added to local cart');
-      }
-    }
-
-    setAddedSuccess(true);
-    setTimeout(() => setAddedSuccess(false), 2500);
+    const success = await addToCart(product, 1);
     setAddingToCart(false);
+
+    if (success) {
+      setAddedSuccess(true);
+      setTimeout(() => setAddedSuccess(false), 2500);
+    }
   };
 
   const handleBuyNow = async () => {
     if (!product) return;
     setAddingToCart(true);
-    addProductToLocalCart(product);
-
-    if (isAuthenticated) {
-      try {
-        await apiClient.post('/cart/add', { productId: product.id, quantity: 1 });
-      } catch (err) {}
-    }
-
+    await addToCart(product, 1);
     setAddingToCart(false);
     navigate('/checkout');
   };

@@ -5,6 +5,7 @@ import {
   Sparkles, Mic, Camera, Coins, Layers, ChevronDown, LogOut, Package, Shield, Store, Truck, Navigation
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 import { apiClient } from '../api/apiClient';
 import { SimpleLocationModal } from './SimpleLocationModal';
 
@@ -15,9 +16,9 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({ onOpenVoiceSearch, onOpenImageSearch }) => {
   const { user, isAuthenticated, logout } = useAuth();
+  const { cartCount } = useCart();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
-  const [cartCount, setCartCount] = useState(0);
   const [wishlistCount, setWishlistCount] = useState(0);
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [currentPincode, setCurrentPincode] = useState('560038');
@@ -42,15 +43,10 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenVoiceSearch, onOpenImageSe
     }
 
     if (isAuthenticated) {
-      apiClient.get('/cart')
-        .then(res => setCartCount(res.data.totalItems || 1))
-        .catch(() => setCartCount(1));
-
       apiClient.get('/wishlist')
         .then(res => setWishlistCount(res.data.totalItems || 2))
         .catch(() => setWishlistCount(2));
     } else {
-      setCartCount(1);
       setWishlistCount(2);
     }
   }, [isAuthenticated]);

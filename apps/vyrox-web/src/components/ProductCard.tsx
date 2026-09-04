@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Star, ShoppingBag, Heart, Layers, Zap, Check } from 'lucide-react';
 import { ProductSummary } from '../types';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 import { apiClient } from '../api/apiClient';
 
 interface ProductCardProps {
@@ -12,6 +13,7 @@ interface ProductCardProps {
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCartSuccess }) => {
   const { isAuthenticated, setPendingAction } = useAuth();
+  const { addToCart } = useCart();
   const navigate = useNavigate();
   const [isAdding, setIsAdding] = React.useState(false);
   const [added, setAdded] = React.useState(false);
@@ -21,27 +23,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCartSu
     e.preventDefault();
     e.stopPropagation();
 
-    if (!isAuthenticated) {
-      // Guest interception: save pending action and route to login
-      setPendingAction({
-        type: 'ADD_TO_CART',
-        productId: product.id,
-        quantity: 1,
-      });
-      navigate('/login?redirect=' + encodeURIComponent(window.location.pathname));
-      return;
-    }
+    setIsAdding(true);
+    const success = await addToCart(product, 1);
+    setIsAdding(false);
 
-    try {
-      setIsAdding(true);
-      await apiClient.post('/cart/add', { productId: product.id, quantity: 1 });
+    if (success) {
       setAdded(true);
       setTimeout(() => setAdded(false), 2000);
       if (onAddToCartSuccess) onAddToCartSuccess();
-    } catch (err) {
-      console.error('Failed to add to cart', err);
-    } finally {
-      setIsAdding(false);
     }
   };
 

@@ -1,175 +1,33 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   ShoppingBag, Trash2, Bookmark, ArrowRight, Tag, ShieldCheck, 
   Coins, Sparkles, AlertCircle, Check, Plus, Minus
 } from 'lucide-react';
-import { apiClient } from '../api/apiClient';
 import { CartResponse, CartItem } from '../types';
 import { useAuth } from '../context/AuthContext';
-import { fallbackProducts } from '../data/fallbackCatalog';
-
-const defaultDemoCart: CartResponse = {
-  cartId: 1,
-  items: [
-    {
-      itemId: 1,
-      productId: 101,
-      productTitle: 'Apple iPhone 15 Pro Max (256 GB) - Natural Titanium',
-      productSku: 'VYR-PHN-001',
-      categoryName: 'Mobiles',
-      brandName: 'Apple',
-      mainImageUrl: 'https://images.unsplash.com/photo-1695048133142-1a20484d2569?auto=format&fit=crop&w=800&q=80',
-      mrp: 159900,
-      sellingPrice: 148900,
-      discountPercentage: 7,
-      quantity: 1,
-      savedForLater: false,
-      estimatedDelivery: 'Tomorrow, by 10 AM',
-      inStock: true,
-    },
-    {
-      itemId: 2,
-      productId: 203,
-      productTitle: 'Sony WH-1000XM5 Wireless Industry Leading Noise Canceling Headphones',
-      productSku: 'VYR-AUD-001',
-      categoryName: 'Electronics',
-      brandName: 'Sony',
-      mainImageUrl: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=80',
-      mrp: 34990,
-      sellingPrice: 26990,
-      discountPercentage: 23,
-      quantity: 1,
-      savedForLater: false,
-      estimatedDelivery: '⚡ 15-Minute Instant Delivery',
-      inStock: true,
-    }
-  ],
-  savedForLaterItems: [],
-  totalItems: 2,
-  subtotal: 175890,
-  totalSavings: 19000,
-  deliveryFee: 0,
-  grandTotal: 175890,
-  potentialCoinsEarned: 8794,
-};
-
-function calculateCartTotals(items: CartItem[], savedItems: CartItem[]): CartResponse {
-  const subtotal = items.reduce((sum, item) => sum + item.sellingPrice * item.quantity, 0);
-  const totalMrp = items.reduce((sum, item) => sum + item.mrp * item.quantity, 0);
-  const totalSavings = Math.max(0, totalMrp - subtotal);
-  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
-  const deliveryFee = subtotal > 500 ? 0 : 40;
-
-  return {
-    cartId: 1,
-    items,
-    savedForLaterItems: savedItems,
-    totalItems,
-    subtotal,
-    totalSavings,
-    deliveryFee,
-    grandTotal: subtotal + deliveryFee,
-    potentialCoinsEarned: Math.round(subtotal * 0.05),
-  };
-}
+import { useCart } from '../context/CartContext';
 
 export const CartPage: React.FC = () => {
-  const { isAuthenticated, user } = useAuth();
+  const { user } = useAuth();
+  const { cart, updateQuantity, removeFromCart, saveForLater } = useCart();
   const navigate = useNavigate();
 
-  const [cart, setCart] = useState<CartResponse>(() => {
-    const saved = localStorage.getItem('vyrox_local_cart');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {}
-    }
-    return defaultDemoCart;
-  });
-
-  const [loading, setLoading] = useState(false);
   const [couponCode, setCouponCode] = useState('');
   const [couponApplied, setCouponApplied] = useState(false);
   const [couponError, setCouponError] = useState('');
   const [redeemCoins, setRedeemCoins] = useState(false);
 
-  const fetchCart = async () => {
-    if (!isAuthenticated) return;
-    try {
-      const res = await apiClient.get('/cart');
-      if (res.data && Array.isArray(res.data.items) && res.data.items.length > 0) {
-        setCart(res.data);
-        localStorage.setItem('vyrox_local_cart', JSON.stringify(res.data));
-      }
-    } catch (err) {
-      console.warn('Using local cart cache');
-    }
+  const handleUpdateQuantity = (itemId: number, qty: number) => {
+    updateQuantity(itemId, qty);
   };
 
-  useEffect(() => {
-    fetchCart();
-  }, [isAuthenticated]);
-
-  const updateCartState = (newCart: CartResponse) => {
-    setCart(newCart);
-    localStorage.setItem('vyrox_local_cart', JSON.stringify(newCart));
+  const handleSaveForLater = (itemId: number, save: boolean) => {
+    saveForLater(itemId, save);
   };
 
-  const handleUpdateQuantity = async (itemId: number, qty: number) => {
-    if (qty < 1) {
-      handleRemove(itemId);
-      return;
-    }
-
-    if (isAuthenticated) {
-      try {
-        const res = await apiClient.put(`/cart/items/${itemId}`, { quantity: qty });
-        if (res.data && res.data.items) {
-          updateCartState(res.data);
-          return;
-        }
-      } catch (err) {}
-    }
-
-    // Client-side fallback update
-    const updatedItems = cart.items.map((it) => (it.itemId === itemId ? { ...it, quantity: qty } : it));
-    const newCart = calculateCartTotals(updatedItems, cart.savedForLaterItems);
-    updateCartState(newCart);
-  };
-
-  const handleSaveForLater = async (itemId: number, save: boolean) => {
-    if (save) {
-      const itemToSave = cart.items.find((it) => it.itemId === itemId);
-      if (!itemToSave) return;
-      const updatedItems = cart.items.filter((it) => it.itemId !== itemId);
-      const updatedSaved = [...cart.savedForLaterItems, { ...itemToSave, savedForLater: true }];
-      const newCart = calculateCartTotals(updatedItems, updatedSaved);
-      updateCartState(newCart);
-    } else {
-      const itemToMove = cart.savedForLaterItems.find((it) => it.itemId === itemId);
-      if (!itemToMove) return;
-      const updatedSaved = cart.savedForLaterItems.filter((it) => it.itemId !== itemId);
-      const updatedItems = [...cart.items, { ...itemToMove, savedForLater: false }];
-      const newCart = calculateCartTotals(updatedItems, updatedSaved);
-      updateCartState(newCart);
-    }
-  };
-
-  const handleRemove = async (itemId: number) => {
-    if (isAuthenticated) {
-      try {
-        const res = await apiClient.delete(`/cart/items/${itemId}`);
-        if (res.data && res.data.items) {
-          updateCartState(res.data);
-          return;
-        }
-      } catch (err) {}
-    }
-
-    const updatedItems = cart.items.filter((it) => it.itemId !== itemId);
-    const newCart = calculateCartTotals(updatedItems, cart.savedForLaterItems);
-    updateCartState(newCart);
+  const handleRemove = (itemId: number) => {
+    removeFromCart(itemId);
   };
 
   const handleApplyCoupon = () => {

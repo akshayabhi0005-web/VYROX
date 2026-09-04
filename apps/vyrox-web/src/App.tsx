@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { CartProvider } from './context/CartContext';
 import { Navbar } from './components/Navbar';
 import { CategoryBar } from './components/CategoryBar';
 import { Footer } from './components/Footer';
@@ -32,8 +33,9 @@ export const App: React.FC = () => {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <BrowserRouter>
-          <div className="min-h-screen flex flex-col justify-between bg-[#F8F9FD]">
+        <CartProvider>
+          <BrowserRouter>
+            <div className="min-h-screen flex flex-col justify-between bg-[#F8F9FD]">
           <div>
             <Navbar
               onOpenVoiceSearch={() => setVoiceSearchOpen(true)}
@@ -69,6 +71,7 @@ export const App: React.FC = () => {
           <ImageSearchModal isOpen={imageSearchOpen} onClose={() => setImageSearchOpen(false)} />
         </div>
       </BrowserRouter>
+      </CartProvider>
     </AuthProvider>
     </ErrorBoundary>
   );

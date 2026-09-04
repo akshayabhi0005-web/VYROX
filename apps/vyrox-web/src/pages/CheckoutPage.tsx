@@ -8,6 +8,7 @@ import {
 import { apiClient } from '../api/apiClient';
 import { Address, Order, CartResponse } from '../types';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 
 const defaultDemoAddresses: Address[] = [
   {
@@ -42,6 +43,7 @@ export const CheckoutPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user, refreshUserData } = useAuth();
+  const { cart, clearCart } = useCart();
 
   const couponCode = searchParams.get('coupon') || '';
   const redeemCoinsParam = searchParams.get('coins') === 'true';
@@ -63,44 +65,6 @@ export const CheckoutPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [placingOrder, setPlacingOrder] = useState(false);
   const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
-
-  // Cart state
-  const [cart, setCart] = useState<CartResponse>(() => {
-    const saved = localStorage.getItem('vyrox_local_cart');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {}
-    }
-    return {
-      cartId: 1,
-      items: [
-        {
-          itemId: 1,
-          productId: 101,
-          productTitle: 'Apple iPhone 15 Pro Max (256 GB) - Natural Titanium',
-          productSku: 'VYR-PHN-001',
-          categoryName: 'Mobiles',
-          brandName: 'Apple',
-          mainImageUrl: 'https://images.unsplash.com/photo-1695048133142-1a20484d2569?auto=format&fit=crop&w=800&q=80',
-          mrp: 159900,
-          sellingPrice: 148900,
-          discountPercentage: 7,
-          quantity: 1,
-          savedForLater: false,
-          estimatedDelivery: 'Tomorrow, by 10 AM',
-          inStock: true,
-        }
-      ],
-      savedForLaterItems: [],
-      totalItems: 1,
-      subtotal: 148900,
-      totalSavings: 11000,
-      deliveryFee: 0,
-      grandTotal: 148900,
-      potentialCoinsEarned: 7445,
-    };
-  });
 
   // New Address Form Modal
   const [showAddressModal, setShowAddressModal] = useState(false);
@@ -240,19 +204,7 @@ export const CheckoutPage: React.FC = () => {
       } catch (e) {}
 
       // 2. Clear Cart
-      const emptyCart: CartResponse = {
-        cartId: 1,
-        items: [],
-        savedForLaterItems: cart.savedForLaterItems,
-        totalItems: 0,
-        subtotal: 0,
-        totalSavings: 0,
-        deliveryFee: 0,
-        grandTotal: 0,
-        potentialCoinsEarned: 0,
-      };
-      setCart(emptyCart);
-      localStorage.setItem('vyrox_local_cart', JSON.stringify(emptyCart));
+      clearCart();
 
       // 3. Trigger celebration confetti
       try {
