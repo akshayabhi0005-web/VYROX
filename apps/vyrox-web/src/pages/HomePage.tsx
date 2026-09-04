@@ -83,12 +83,12 @@ export const HomePage: React.FC = () => {
           </div>
 
           {/* Decorative Hero Elements */}
-          <div className="hidden lg:block absolute right-12 top-1/2 -translate-y-1/2">
-            <div className="relative w-80 h-80 rounded-full bg-gradient-to-br from-cyan-400/20 to-orange-500/20 blur-2xl -z-10"></div>
+          <div className="hidden lg:flex items-center justify-center absolute right-12 sm:right-16 top-1/2 -translate-y-1/2 z-10 pointer-events-none">
+            <div className="absolute w-72 h-72 rounded-full bg-gradient-to-br from-cyan-400/20 to-orange-500/20 blur-2xl -z-10"></div>
             <img
               src="/vyrox-logo.png"
               alt="VYROX Hero"
-              className="w-72 h-auto object-contain drop-shadow-2xl animate-pulse"
+              className="max-h-52 sm:max-h-56 w-auto object-contain drop-shadow-2xl"
             />
           </div>
         </div>
