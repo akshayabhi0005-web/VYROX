@@ -23,14 +23,17 @@ import { SellerPage } from './pages/SellerPage';
 import { AdminPage } from './pages/AdminPage';
 import { DeliveryPage } from './pages/DeliveryPage';
 
+import { ErrorBoundary } from './components/ErrorBoundary';
+
 export const App: React.FC = () => {
   const [voiceSearchOpen, setVoiceSearchOpen] = useState(false);
   const [imageSearchOpen, setImageSearchOpen] = useState(false);
 
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <div className="min-h-screen flex flex-col justify-between bg-[#F8F9FD]">
+    <ErrorBoundary>
+      <AuthProvider>
+        <BrowserRouter>
+          <div className="min-h-screen flex flex-col justify-between bg-[#F8F9FD]">
           <div>
             <Navbar
               onOpenVoiceSearch={() => setVoiceSearchOpen(true)}
@@ -67,5 +70,6 @@ export const App: React.FC = () => {
         </div>
       </BrowserRouter>
     </AuthProvider>
+    </ErrorBoundary>
   );
 };

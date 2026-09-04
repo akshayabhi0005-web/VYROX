@@ -61,54 +61,79 @@ export const ProductDetailPage: React.FC = () => {
       .finally(() => setLoading(false));
   }, [id]);
 
+  const addProductToLocalCart = (prod: ProductDetail) => {
+    try {
+      const savedCartStr = localStorage.getItem('vyrox_local_cart');
+      const localCart = savedCartStr
+        ? JSON.parse(savedCartStr)
+        : { cartId: 1, items: [], savedForLaterItems: [], totalItems: 0, subtotal: 0, totalSavings: 0, deliveryFee: 0, grandTotal: 0 };
+      
+      const existingIndex = localCart.items.findIndex((it: any) => it.productId === prod.id);
+      if (existingIndex >= 0) {
+        localCart.items[existingIndex].quantity += 1;
+      } else {
+        localCart.items.push({
+          itemId: Date.now(),
+          productId: prod.id,
+          productTitle: prod.title,
+          productSku: prod.sku,
+          categoryName: prod.categoryName,
+          brandName: prod.brandName,
+          mainImageUrl: prod.mainImageUrl,
+          mrp: prod.mrp,
+          sellingPrice: prod.sellingPrice,
+          discountPercentage: prod.discountPercentage,
+          quantity: 1,
+          savedForLater: false,
+          estimatedDelivery: prod.estimatedDeliveryDays || 'Tomorrow, by 11 AM',
+          inStock: true,
+        });
+      }
+
+      const subtotal = localCart.items.reduce((s: number, it: any) => s + it.sellingPrice * it.quantity, 0);
+      const totalMrp = localCart.items.reduce((s: number, it: any) => s + it.mrp * it.quantity, 0);
+      localCart.subtotal = subtotal;
+      localCart.totalSavings = Math.max(0, totalMrp - subtotal);
+      localCart.totalItems = localCart.items.reduce((s: number, it: any) => s + it.quantity, 0);
+      localCart.deliveryFee = subtotal > 500 ? 0 : 40;
+      localCart.grandTotal = subtotal + localCart.deliveryFee;
+      localStorage.setItem('vyrox_local_cart', JSON.stringify(localCart));
+    } catch (e) {
+      console.warn('Could not update local cart cache', e);
+    }
+  };
+
   const handleAddToCart = async () => {
     if (!product) return;
+    setAddingToCart(true);
+    addProductToLocalCart(product);
 
-    if (!isAuthenticated) {
-      setPendingAction({
-        type: 'ADD_TO_CART',
-        productId: product.id,
-        quantity: 1,
-      });
-      navigate(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
-      return;
+    if (isAuthenticated) {
+      try {
+        await apiClient.post('/cart/add', { productId: product.id, quantity: 1 });
+      } catch (err) {
+        console.warn('Added to local cart');
+      }
     }
 
-    try {
-      setAddingToCart(true);
-      await apiClient.post('/cart/add', { productId: product.id, quantity: 1 });
-      setAddedSuccess(true);
-      setTimeout(() => setAddedSuccess(false), 2500);
-    } catch (err) {
-      console.error('Failed to add to cart', err);
-    } finally {
-      setAddingToCart(false);
-    }
+    setAddedSuccess(true);
+    setTimeout(() => setAddedSuccess(false), 2500);
+    setAddingToCart(false);
   };
 
   const handleBuyNow = async () => {
     if (!product) return;
+    setAddingToCart(true);
+    addProductToLocalCart(product);
 
-    if (!isAuthenticated) {
-      setPendingAction({
-        type: 'BUY_NOW',
-        productId: product.id,
-        quantity: 1,
-        redirectUrl: '/checkout',
-      });
-      navigate(`/login?redirect=${encodeURIComponent('/checkout')}`);
-      return;
+    if (isAuthenticated) {
+      try {
+        await apiClient.post('/cart/add', { productId: product.id, quantity: 1 });
+      } catch (err) {}
     }
 
-    try {
-      setAddingToCart(true);
-      await apiClient.post('/cart/add', { productId: product.id, quantity: 1 });
-      navigate('/checkout');
-    } catch (err) {
-      console.error('Failed to proceed to buy now', err);
-    } finally {
-      setAddingToCart(false);
-    }
+    setAddingToCart(false);
+    navigate('/checkout');
   };
 
   const handlePincodeCheck = () => {
