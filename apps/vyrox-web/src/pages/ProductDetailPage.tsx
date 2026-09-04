@@ -80,7 +80,11 @@ export const ProductDetailPage: React.FC = () => {
     setAddingToCart(true);
     await addToCart(product, 1);
     setAddingToCart(false);
-    navigate('/checkout');
+    if (!isAuthenticated) {
+      navigate('/login?redirect=/checkout');
+    } else {
+      navigate('/checkout');
+    }
   };
 
   const handlePincodeCheck = () => {

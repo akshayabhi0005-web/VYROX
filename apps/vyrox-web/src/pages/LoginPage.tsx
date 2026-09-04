@@ -9,7 +9,8 @@ export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const { login, executePendingAction } = useAuth();
 
-  const redirectUrl = searchParams.get('redirect') || '/';
+  const redirectParam = searchParams.get('redirect');
+  const redirectUrl = redirectParam ? (redirectParam.startsWith('/') ? redirectParam : decodeURIComponent(redirectParam)) : '/';
 
   const [authMode, setAuthMode] = useState<'email' | 'otp'>('email');
   const [emailOrMobile, setEmailOrMobile] = useState('');

@@ -87,7 +87,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(false);
 
   const [cart, setCart] = useState<CartResponse>(() => {
-    const saved = localStorage.getItem('vyrox_local_cart');
+    const saved = localStorage.getItem('vyrox_local_cart') || localStorage.getItem('vyrox_guest_cart');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -95,7 +95,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return calculateCartTotals(parsed.items, parsed.savedForLaterItems || []);
         }
       } catch (e) {
-        console.warn('Error reading vyrox_local_cart from localStorage', e);
+        console.warn('Error reading saved cart from localStorage', e);
       }
     }
     return defaultDemoCart;
@@ -105,34 +105,63 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setCart(newCart);
     try {
       localStorage.setItem('vyrox_local_cart', JSON.stringify(newCart));
+      localStorage.setItem('vyrox_guest_cart', JSON.stringify(newCart));
     } catch (e) {
       console.warn('Error saving cart to localStorage', e);
     }
   }, []);
 
-  const refreshCart = useCallback(async () => {
+  // Intelligent Guest -> Authenticated Cart Merge
+  const mergeAndRefreshCart = useCallback(async () => {
     if (!isAuthenticated) return;
     try {
       setIsLoading(true);
       const res = await apiClient.get('/cart');
-      if (res.data && Array.isArray(res.data.items) && res.data.items.length > 0) {
-        const fullCart = calculateCartTotals(res.data.items, res.data.savedForLaterItems || []);
-        saveCart(fullCart);
+      const serverItems: CartItem[] = (res.data && Array.isArray(res.data.items)) ? res.data.items : [];
+      const guestItems = [...cart.items];
+
+      // Merge guest items into server items
+      const mergedItems = [...serverItems];
+      for (const gItem of guestItems) {
+        const existingIndex = mergedItems.findIndex((it) => it.productId === gItem.productId);
+        if (existingIndex >= 0) {
+          // Combine quantities
+          mergedItems[existingIndex] = {
+            ...mergedItems[existingIndex],
+            quantity: mergedItems[existingIndex].quantity + gItem.quantity,
+          };
+        } else {
+          mergedItems.push(gItem);
+          // Sync to backend if possible
+          apiClient.post('/cart/add', {
+            productId: gItem.productId,
+            quantity: gItem.quantity,
+          }).catch(() => {});
+        }
       }
+
+      const fullCart = calculateCartTotals(
+        mergedItems.length > 0 ? mergedItems : guestItems,
+        (cart.savedForLaterItems || [])
+      );
+
+      saveCart(fullCart);
     } catch (err) {
-      // Fallback silently to local cache
+      // Keep current local cart
     } finally {
       setIsLoading(false);
     }
-  }, [isAuthenticated, saveCart]);
-
+  }, [isAuthenticated, cart.items, cart.savedForLaterItems, saveCart]);
 
   useEffect(() => {
     if (isAuthenticated) {
-      refreshCart();
+      mergeAndRefreshCart();
     }
-  }, [isAuthenticated, refreshCart]);
+  }, [isAuthenticated]);
 
+  const refreshCart = async () => {
+    await mergeAndRefreshCart();
+  };
 
   const addToCart = async (product: ProductSummary | ProductDetail, quantity = 1): Promise<boolean> => {
     try {

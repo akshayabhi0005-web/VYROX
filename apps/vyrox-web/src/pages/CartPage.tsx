@@ -9,7 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 
 export const CartPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const { cart, updateQuantity, removeFromCart, saveForLater } = useCart();
   const navigate = useNavigate();
 
@@ -17,6 +17,21 @@ export const CartPage: React.FC = () => {
   const [couponApplied, setCouponApplied] = useState(false);
   const [couponError, setCouponError] = useState('');
   const [redeemCoins, setRedeemCoins] = useState(false);
+
+  const handleProceedToCheckout = () => {
+    let url = '/checkout';
+    const params = new URLSearchParams();
+    if (couponApplied && couponCode) params.set('coupon', couponCode);
+    if (redeemCoins) params.set('coins', 'true');
+    const queryString = params.toString();
+    if (queryString) url += `?${queryString}`;
+
+    if (!isAuthenticated) {
+      navigate(`/login?redirect=${encodeURIComponent(url)}`);
+    } else {
+      navigate(url);
+    }
+  };
 
   const handleUpdateQuantity = (itemId: number, qty: number) => {
     updateQuantity(itemId, qty);
@@ -304,7 +319,7 @@ export const CartPage: React.FC = () => {
 
             {/* Proceed to Checkout CTA */}
             <button
-              onClick={() => navigate('/checkout')}
+              onClick={handleProceedToCheckout}
               className="w-full py-3.5 bg-[#FF6500] hover:bg-[#FF884B] text-white font-bold text-xs sm:text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
             >
               <span>Proceed to Checkout</span>

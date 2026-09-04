@@ -8,7 +8,8 @@ export const RegisterPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { login, executePendingAction } = useAuth();
-  const redirectUrl = searchParams.get('redirect') || '/';
+  const redirectParam = searchParams.get('redirect');
+  const redirectUrl = redirectParam ? (redirectParam.startsWith('/') ? redirectParam : decodeURIComponent(redirectParam)) : '/';
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');

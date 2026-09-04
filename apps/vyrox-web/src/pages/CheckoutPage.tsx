@@ -42,11 +42,18 @@ const defaultDemoAddresses: Address[] = [
 export const CheckoutPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { user, refreshUserData } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading, refreshUserData } = useAuth();
   const { cart, clearCart } = useCart();
 
   const couponCode = searchParams.get('coupon') || '';
   const redeemCoinsParam = searchParams.get('coins') === 'true';
+
+  // Redirect guest to login
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      navigate('/login?redirect=' + encodeURIComponent(window.location.pathname + window.location.search), { replace: true });
+    }
+  }, [isAuthenticated, authLoading, navigate]);
 
   const [addresses, setAddresses] = useState<Address[]>(() => {
     const saved = localStorage.getItem('vyrox_local_addresses');
@@ -78,8 +85,10 @@ export const CheckoutPage: React.FC = () => {
   const [newType, setNewType] = useState('HOME');
 
   useEffect(() => {
-    fetchAddresses();
-  }, []);
+    if (isAuthenticated) {
+      fetchAddresses();
+    }
+  }, [isAuthenticated]);
 
   const fetchAddresses = async () => {
     try {
@@ -219,6 +228,34 @@ export const CheckoutPage: React.FC = () => {
       setPlacingOrder(false);
     }
   };
+
+  if (authLoading || !isAuthenticated) {
+    return (
+      <div className="max-w-md mx-auto px-4 py-20 text-center space-y-4">
+        <div className="w-12 h-12 border-4 border-[#FF6500] border-t-transparent rounded-full animate-spin mx-auto"></div>
+        <h2 className="text-lg font-bold text-slate-800">Redirecting to Login...</h2>
+        <p className="text-xs text-slate-500">Please sign in with your email & password to complete your order.</p>
+      </div>
+    );
+  }
+
+  if (!completedOrder && (!cart || cart.items.length === 0)) {
+    return (
+      <div className="max-w-md mx-auto px-4 py-20 text-center space-y-4">
+        <div className="w-16 h-16 bg-orange-50 text-[#FF6500] rounded-3xl flex items-center justify-center mx-auto shadow-sm">
+          <Truck className="w-8 h-8" />
+        </div>
+        <h2 className="text-xl font-bold text-slate-900">Your Cart is Empty</h2>
+        <p className="text-xs text-slate-500">Add products from Top Deals or Categories before checking out.</p>
+        <Link
+          to="/top-deals"
+          className="inline-flex px-6 py-3 bg-[#FF6500] hover:bg-[#FF884B] text-white text-xs font-bold rounded-xl shadow-md transition-all"
+        >
+          Explore Top Deals
+        </Link>
+      </div>
+    );
+  }
 
   if (completedOrder) {
     return (
