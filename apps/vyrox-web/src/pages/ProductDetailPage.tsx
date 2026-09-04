@@ -9,18 +9,23 @@ import { apiClient } from '../api/apiClient';
 import { useAuth } from '../context/AuthContext';
 import { ProductCard } from '../components/ProductCard';
 
+import { fallbackProducts, fallbackSummaryList } from '../data/fallbackCatalog';
+
 export const ProductDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { isAuthenticated, setPendingAction } = useAuth();
 
-  const [product, setProduct] = useState<ProductDetail | null>(null);
-  const [similar, setSimilar] = useState<ProductSummary[]>([]);
+  const numId = parseInt(id || '1', 10);
+  const initialProduct = fallbackProducts.find(p => p.id === numId) || fallbackProducts[0];
+
+  const [product, setProduct] = useState<ProductDetail | null>(initialProduct);
+  const [similar, setSimilar] = useState<ProductSummary[]>(fallbackSummaryList.filter(p => p.id !== initialProduct.id).slice(0, 4));
   const [reviews, setReviews] = useState<ProductReview[]>([]);
-  const [selectedImage, setSelectedImage] = useState<string>('');
+  const [selectedImage, setSelectedImage] = useState<string>(initialProduct.mainImageUrl);
   const [pincode, setPincode] = useState('560038');
   const [deliveryMessage, setDeliveryMessage] = useState('Delivery by Tomorrow 11 AM | Free');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [addingToCart, setAddingToCart] = useState(false);
   const [addedSuccess, setAddedSuccess] = useState(false);
 
@@ -32,20 +37,27 @@ export const ProductDetailPage: React.FC = () => {
 
   useEffect(() => {
     if (!id) return;
-    setLoading(true);
 
-    Promise.all([
+    Promise.allSettled([
       apiClient.get(`/products/${id}`),
       apiClient.get(`/products/${id}/similar`),
       apiClient.get(`/reviews/product/${id}`),
     ])
       .then(([prodRes, simRes, revRes]) => {
-        setProduct(prodRes.data);
-        setSelectedImage(prodRes.data.mainImageUrl);
-        setSimilar(simRes.data || []);
-        setReviews(revRes.data || []);
+        if (prodRes.status === 'fulfilled' && prodRes.value.data) {
+          setProduct(prodRes.value.data);
+          setSelectedImage(prodRes.value.data.mainImageUrl);
+        }
+        if (simRes.status === 'fulfilled' && simRes.value.data) {
+          setSimilar(simRes.value.data);
+        }
+        if (revRes.status === 'fulfilled' && revRes.value.data) {
+          setReviews(revRes.value.data);
+        }
       })
-      .catch((err) => console.error('Failed to load product detail', err))
+      .catch(() => {
+        console.warn('Using built-in product details');
+      })
       .finally(() => setLoading(false));
   }, [id]);
 

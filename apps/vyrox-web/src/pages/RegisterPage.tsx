@@ -35,17 +35,23 @@ export const RegisterPage: React.FC = () => {
 
     try {
       const res = await apiClient.post('/auth/register', {
-        fullName,
-        email,
-        mobile,
+        fullName: fullName.trim(),
+        email: email.trim().toLowerCase(),
+        mobile: mobile.trim(),
         password,
       });
 
-      login(res.data.user, res.data.accessToken);
-      await executePendingAction();
-      navigate(redirectUrl);
+      if (res.data && res.data.user && res.data.accessToken) {
+        login(res.data.user, res.data.accessToken);
+        await executePendingAction();
+        navigate(redirectUrl);
+      } else {
+        throw new Error('Invalid response from registration server.');
+      }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Registration failed. Email or Mobile might already exist.');
+      console.error('Registration failed:', err);
+      const msg = err.response?.data?.message || err.response?.data?.error || err.message || 'Registration failed. Please check your details.';
+      setError(msg);
     } finally {
       setLoading(false);
     }

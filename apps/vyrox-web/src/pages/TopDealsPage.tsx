@@ -5,6 +5,8 @@ import { ProductCard } from '../components/ProductCard';
 import { ProductSummary } from '../types';
 import { apiClient } from '../api/apiClient';
 
+import { fallbackSummaryList } from '../data/fallbackCatalog';
+
 const dealCategories = [
   { label: 'All Deals', slug: '' },
   { label: 'Mobiles', slug: 'mobiles' },
@@ -16,8 +18,8 @@ const dealCategories = [
 
 export const TopDealsPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [products, setProducts] = useState<ProductSummary[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [products, setProducts] = useState<ProductSummary[]>(fallbackSummaryList);
+  const [loading, setLoading] = useState(false);
 
   const selectedCategory = searchParams.get('category') || '';
   const queryParam = searchParams.get('query') || '';
@@ -26,7 +28,6 @@ export const TopDealsPage: React.FC = () => {
   const [sortBy, setSortBy] = useState('popularity');
 
   const fetchDeals = async () => {
-    setLoading(true);
     try {
       const params: any = {
         isTopDeal: true,
@@ -37,7 +38,11 @@ export const TopDealsPage: React.FC = () => {
       if (minRating) params.minRating = minRating;
 
       const res = await apiClient.get('/products', { params });
-      let list: ProductSummary[] = res.data.content || res.data || [];
+      let list: ProductSummary[] = (res.data && (res.data.content || res.data)) || [];
+
+      if (!list.length) {
+        list = [...fallbackSummaryList];
+      }
 
       // Category filter in memory if slug
       if (selectedCategory) {
@@ -54,7 +59,18 @@ export const TopDealsPage: React.FC = () => {
 
       setProducts(list);
     } catch (err) {
-      console.error('Failed to load deals', err);
+      console.warn('Deals API waking up; using built-in catalog');
+      let list = [...fallbackSummaryList];
+      if (selectedCategory) {
+        list = list.filter((p) =>
+          p.categoryName?.toLowerCase().includes(selectedCategory.toLowerCase()) ||
+          (selectedCategory === 'quick-commerce' && p.isQuickCommerceEligible)
+        );
+      }
+      if (minDiscount) {
+        list = list.filter((p) => p.discountPercentage >= minDiscount);
+      }
+      setProducts(list);
     } finally {
       setLoading(false);
     }

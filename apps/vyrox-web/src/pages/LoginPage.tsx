@@ -160,15 +160,21 @@ export const LoginPage: React.FC = () => {
 
     try {
       const res = await apiClient.post('/auth/login', {
-        identifier: emailOrMobile,
+        identifier: emailOrMobile.trim(),
         password,
       });
 
-      login(res.data.user, res.data.accessToken);
-      await executePendingAction();
-      navigate(redirectUrl);
+      if (res.data && res.data.user && res.data.accessToken) {
+        login(res.data.user, res.data.accessToken);
+        await executePendingAction();
+        navigate(redirectUrl);
+      } else {
+        throw new Error('Invalid response from login server.');
+      }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Invalid credentials. Please check your email/mobile and password.');
+      console.error('Login failed:', err);
+      const msg = err.response?.data?.message || err.response?.data?.error || 'Invalid credentials. Please check your email/mobile and password.';
+      setError(msg);
     } finally {
       setLoading(false);
     }

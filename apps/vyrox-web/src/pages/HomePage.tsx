@@ -6,28 +6,39 @@ import { ProductSummary } from '../types';
 import { apiClient } from '../api/apiClient';
 import { useAuth } from '../context/AuthContext';
 
+import { fallbackSummaryList } from '../data/fallbackCatalog';
+
 export const HomePage: React.FC = () => {
   const { user } = useAuth();
-  const [topDeals, setTopDeals] = useState<ProductSummary[]>([]);
-  const [trending, setTrending] = useState<ProductSummary[]>([]);
-  const [bestSellers, setBestSellers] = useState<ProductSummary[]>([]);
-  const [quickCommerce, setQuickCommerce] = useState<ProductSummary[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [topDeals, setTopDeals] = useState<ProductSummary[]>(fallbackSummaryList.filter(p => p.isTopDeal));
+  const [trending, setTrending] = useState<ProductSummary[]>(fallbackSummaryList.filter(p => p.isTrending));
+  const [bestSellers, setBestSellers] = useState<ProductSummary[]>(fallbackSummaryList.filter(p => p.isBestSeller));
+  const [quickCommerce, setQuickCommerce] = useState<ProductSummary[]>(fallbackSummaryList.filter(p => p.isQuickCommerceEligible));
+  const [loading, setLoading] = useState(false);
 
   const fetchCatalog = async () => {
     try {
-      const [dealsRes, trendRes, bestRes, qcRes] = await Promise.all([
+      const [dealsRes, trendRes, bestRes, qcRes] = await Promise.allSettled([
         apiClient.get('/products/top-deals'),
         apiClient.get('/products/trending'),
         apiClient.get('/products/best-sellers'),
         apiClient.get('/products/quick-commerce'),
       ]);
-      setTopDeals(dealsRes.data || []);
-      setTrending(trendRes.data || []);
-      setBestSellers(bestRes.data || []);
-      setQuickCommerce(qcRes.data || []);
+
+      if (dealsRes.status === 'fulfilled' && dealsRes.value.data?.length) {
+        setTopDeals(dealsRes.value.data);
+      }
+      if (trendRes.status === 'fulfilled' && trendRes.value.data?.length) {
+        setTrending(trendRes.value.data);
+      }
+      if (bestRes.status === 'fulfilled' && bestRes.value.data?.length) {
+        setBestSellers(bestRes.value.data);
+      }
+      if (qcRes.status === 'fulfilled' && qcRes.value.data?.length) {
+        setQuickCommerce(qcRes.value.data);
+      }
     } catch (err) {
-      console.error('Failed to load home catalog', err);
+      console.warn('API catalog offline/waking up; using built-in catalog dataset');
     } finally {
       setLoading(false);
     }
