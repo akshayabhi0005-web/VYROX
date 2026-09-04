@@ -1,17 +1,20 @@
 import axios from 'axios';
 
-const isLocal = typeof window !== 'undefined' && (
-  window.location.hostname === 'localhost' || 
-  window.location.hostname === '127.0.0.1' ||
-  window.location.hostname.startsWith('192.168.')
-);
+const getApiBaseUrl = (): string => {
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.')) {
+      return `http://${hostname}:8080/api/v1`;
+    }
+  }
+  return import.meta.env.VITE_API_BASE_URL || 'https://vyrox-backend-rg3r.onrender.com/api/v1';
+};
 
-const API_BASE_URL = isLocal 
-  ? 'http://localhost:8080/api/v1' 
-  : (import.meta.env.VITE_API_BASE_URL || 'https://vyrox-backend-rg3r.onrender.com/api/v1');
+export const API_BASE_URL = getApiBaseUrl();
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
   },

@@ -22,36 +22,74 @@ export const RegisterPage: React.FC = () => {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+
+    const cleanName = fullName.trim();
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanMobile = mobile.replace(/\D/g, '').slice(-10);
+
+    if (!cleanName) {
+      setError('Please enter your full name.');
+      return;
+    }
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+    if (!cleanMobile || cleanMobile.length !== 10) {
+      setError('Please enter a valid 10-digit mobile number.');
+      return;
+    }
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters.');
+      return;
+    }
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      setError('Passwords do not match.');
       return;
     }
     if (!termsAccepted) {
-      setError('Please agree to the VYROX Terms and Conditions');
+      setError('Please agree to the VYROX Terms of Use and Privacy Policy.');
       return;
     }
 
-    setError(null);
     setLoading(true);
 
     try {
+      console.log('[REGISTER REQUEST]', { fullName: cleanName, email: cleanEmail, mobile: cleanMobile });
+
       const res = await apiClient.post('/auth/register', {
-        fullName: fullName.trim(),
-        email: email.trim().toLowerCase(),
-        mobile: mobile.trim(),
+        fullName: cleanName,
+        email: cleanEmail,
+        mobile: cleanMobile,
         password,
       });
 
+      console.log('[REGISTER RESPONSE]', { status: res.status, user: res.data?.user });
+
       if (res.data && res.data.user && res.data.accessToken) {
         login(res.data.user, res.data.accessToken);
-        await executePendingAction();
-        navigate(redirectUrl);
+        try {
+          await executePendingAction();
+        } catch (e) {
+          console.warn('Pending action sync warning', e);
+        }
+        navigate(redirectUrl, { replace: true });
       } else {
-        throw new Error('Invalid response from registration server.');
+        throw new Error('Invalid response received from authentication server.');
       }
     } catch (err: any) {
-      console.error('Registration failed:', err);
-      const msg = err.response?.data?.message || err.response?.data?.error || err.message || 'Registration failed. Please check your details.';
+      console.error('[REGISTER ERROR]', err.response?.data || err.message || err);
+      let msg = 'Registration failed. Please check your details and try again.';
+      if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+        msg = 'Unable to connect to VYROX server. Request timed out. Please try again.';
+      } else if (err.response?.data?.message) {
+        msg = err.response.data.message;
+      } else if (err.response?.data?.error) {
+        msg = err.response.data.error;
+      } else if (!err.response) {
+        msg = 'Unable to connect to VYROX server. Please check your network connection.';
+      }
       setError(msg);
     } finally {
       setLoading(false);

@@ -157,24 +157,52 @@ export const LoginPage: React.FC = () => {
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    const cleanId = emailOrMobile.trim();
+    if (!cleanId) {
+      setError('Please enter your email address or mobile number.');
+      return;
+    }
+    if (!password) {
+      setError('Please enter your password.');
+      return;
+    }
+
     setLoading(true);
 
     try {
+      console.log('[LOGIN REQUEST]', { identifier: cleanId });
+
       const res = await apiClient.post('/auth/login', {
-        identifier: emailOrMobile.trim(),
+        identifier: cleanId,
         password,
       });
 
+      console.log('[LOGIN RESPONSE]', { status: res.status, user: res.data?.user });
+
       if (res.data && res.data.user && res.data.accessToken) {
         login(res.data.user, res.data.accessToken);
-        await executePendingAction();
-        navigate(redirectUrl);
+        try {
+          await executePendingAction();
+        } catch (e) {
+          console.warn('Pending action sync warning', e);
+        }
+        navigate(redirectUrl, { replace: true });
       } else {
-        throw new Error('Invalid response from login server.');
+        throw new Error('Invalid response received from authentication server.');
       }
     } catch (err: any) {
-      console.error('Login failed:', err);
-      const msg = err.response?.data?.message || err.response?.data?.error || 'Invalid credentials. Please check your email/mobile and password.';
+      console.error('[LOGIN ERROR]', err.response?.data || err.message || err);
+      let msg = 'Invalid credentials. Please check your email/mobile and password.';
+      if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+        msg = 'Unable to connect to VYROX server. Request timed out. Please try again.';
+      } else if (err.response?.data?.message) {
+        msg = err.response.data.message;
+      } else if (err.response?.data?.error) {
+        msg = err.response.data.error;
+      } else if (!err.response) {
+        msg = 'Unable to connect to VYROX server. Please check your network connection.';
+      }
       setError(msg);
     } finally {
       setLoading(false);
